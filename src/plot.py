@@ -94,7 +94,7 @@ def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
 			labels[i] = r'log$_{10}$ '+labels[i]
 		truths.append( data[-1][iminssr] )
 	data = numpy.vstack( data ).T
-	import triangle as dfmtriangle
+	from .emcee import triangle as dfmtriangle
 	fig = dfmtriangle.corner(data, labels=labels, truths=truths) 
 	# Now add a histogram for SSR
 	x = pardict['ssr']

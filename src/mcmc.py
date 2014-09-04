@@ -1,5 +1,5 @@
 from __future__ import print_function 
-import emcee
+from phymbie import emcee
 import h5py
 import math
 import numpy
