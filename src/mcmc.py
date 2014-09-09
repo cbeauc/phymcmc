@@ -223,6 +223,8 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	if derivedchain is not False:
 		for pi,pn in enumerate(derivedparlist):
 			pardict[pn] = derivedchain[idx,pi]
+	# Tell people about what you got for them ;)
+	print('Your chain contained %d accepted parameters.' % len(pardict['ssr']))
 	return pardict, chainattrs
 
 

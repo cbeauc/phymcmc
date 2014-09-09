@@ -78,7 +78,6 @@ def convergence( chain_file, nburn=-1, parlist=None ):
 def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
 	pardict, chainattrs = phymbie.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	labels = rawlabels[:]
-	print('Your chain contained %d accepted parameters.' % len(pardict['ssr']))
 	# Data
 	data = []
 	# Best-fit values
