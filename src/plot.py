@@ -1,5 +1,7 @@
+import math
 import numpy
 import phymbie.mcmc
+
 ### plotting STUFF
 import matplotlib
 matplotlib.use('Agg')
@@ -109,7 +111,6 @@ def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
 
 
 def choose_bins_n_weights(x, bins, linear=False):
-	import math
 	whm = numpy.percentile(x,[15.87,50,84.13])
 	if linear:
 		#tbins = numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],bins)
@@ -123,53 +124,66 @@ def choose_bins_n_weights(x, bins, linear=False):
 	return tbins, weights
 
 
-def hist( key, chainfiles, colors, title=None, fig=None, ax=None, bins=50, relative=[], nburn=-1 ):
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=-1 ):
 	import matplotlib.pyplot
-	if fig is None:
-		fig = matplotlib.pyplot.figure()
-		if ax is None:
-			fig.set_size_inches(3,3)
-	if ax is None:
-		ax = matplotlib.pyplot.axes()
-	bestfit = []
-	nmax = 0.0
+
+	# Set the arrangement/dimensions of the hist grid
+	if dims is None:
+		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
+		gw = int(math.ceil(1.0*len(keys)/gh))
+	else:
+		(gh,gw) = dims
+		assert len(keys) <= (gw*gh), "Grid dimensions %s cannot fit keys (%d)" % (repr(dims),len(keys))
+
+	if labels is None:
+		labels = keys
+
+	# Setup the figure looking nice
+	fig = matplotlib.pyplot.figure()
+	fig.set_size_inches(3*gw,2.8*gh)
+	matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
+
+	# Load the parameters of each chain file
+	pardicts = {key: [] for key in keys}
+	bestfits = {key: [] for key in keys}
+	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
-		pardict, chainattrs = phymbie.mcmc.load_mcmc_chain( cf, nburn=nburn )
-		bestfit.append( numpy.median(pardict[key]) )
-		if len(relative):
-			try:
-				x = pardict[key]/bestfit[relative[i]]
-			except ValueError:
-				raise ValueError("If you want to plot B relative to A then B should come after A in the list.")
-		else:
-			x = pardict[key]
-		normed = True
-		if isinstance(bins,int):
-			tbins, weights = choose_bins_n_weights(x, bins, linear=(key in chainattrs['linpars']))
-			if key in chainattrs['linpars']:
-				normed = True
+		pdic,chainattrs = phymbie.mcmc.load_mcmc_chain( cf, nburn=nburn )
+		clen = min( clen, len(pdic[keys[0]]) )
+		for key in keys:
+			pardicts[key].append( pdic[key] )
+			bestfits[key].append( numpy.median( pdic[key] ) )
+
+	# Now start plotting each histogram
+	for i,key in enumerate(keys):
+		ax = matplotlib.pyplot.subplot2grid((gh,gw), (i/gw,i%gw))
+		nmax = 0.0
+		for cfn in range(len(chainfiles)):
+			if len(relative):
+				if cfn == relative[cfn]:
+					x = pardicts[key][cfn]/numpy.median( pardicts[key][cfn] )
+				else:
+					x = pardicts[key][cfn][-clen:]/pardicts[key][relative[cfn]][-clen:]
 			else:
-				normed = False
-		else:
-			tbins = bins
-		n,b,p = ax.hist(x, bins=tbins, normed=normed, weights=weights, color=colors[i], histtype='stepfilled', linewidth=0.0, alpha=0.2)
-		ax.add_patch( matplotlib.patches.Polygon(p[0].get_xy(), fill=False, alpha=None, edgecolor=colors[i], linewidth=2.0) )
-		nmax = max(numpy.max(n),nmax)
-		#ax.axvline(bestfit[i], color=colors[i], linewidth=1.5)
-		#### FAKE STUFF
-		#n,b,p = matplotlib.pyplot.hist(x*1.5, bins=bins, normed=True, color='red', histtype='stepfilled', linewidth=0, alpha=0.1)
-		#ax.add_patch( matplotlib.patches.Polygon(p[0].get_xy(), fill=False, alpha=None, edgecolor='red', linewidth=2.0) )
-		#nmax = max(numpy.max(n),nmax)
-		#ax.axvline(numpy.median(x*1.5), color='red', linewidth=1.5)
-		#### FAKE STUFF
-	if title:
-		ax.set_title(title)
-	ax.yaxis.set_visible(False)
-	ax.set_ylim(0, 1.1*nmax)
-	if key not in chainattrs['linpars']:
-		ax.set_xscale('log')
+				x = pardicts[key][cfn]
+			normed = True
+			if isinstance(bins,int):
+				tbins, weights = choose_bins_n_weights(x, bins, linear=(key in chainattrs['linpars']))
+				if key in chainattrs['linpars']:
+					normed = True
+				else:
+					normed = False
+			else:
+				tbins = bins
+			# FIXME: if someone provided bins, then weights is unset
+			n,b,p = ax.hist(x, bins=tbins, normed=normed, weights=weights, color=colors[cfn], histtype='stepfilled', linewidth=0.0, alpha=0.2)
+			ax.add_patch( matplotlib.patches.Polygon(p[0].get_xy(), fill=False, alpha=None, edgecolor=colors[cfn], linewidth=2.0) )
+			nmax = max(numpy.max(n),nmax)
+
+		ax.set_title(labels[i])
+		ax.yaxis.set_visible(False)
+		ax.set_ylim(0, 1.1*nmax)
+		if key not in chainattrs['linpars']:
+			ax.set_xscale('log')
 	return fig
 
-
-def hist_grid( nup, keys, chainfiles, colors, titles=None, bins=50, relative=[], nburn=-1 ):
-	print('fixme')
