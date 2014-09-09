@@ -3,16 +3,17 @@ import phymbie.mcmc
 ### plotting STUFF
 import matplotlib
 matplotlib.use('Agg')
-
-params = {  'xtick.labelsize': 14,
-            'ytick.labelsize': 14,
-            'axes.titlesize': 'medium',
-            'axes.labelsize': 'medium',
-            'legend.fontsize': 'medium',
-            'font.family': 'serif',
-            'font.serif': 'Computer Modern Roman',
-            'font.size': 14,
-            'text.usetex': True}
+params = {
+	'xtick.labelsize': 14,
+	'ytick.labelsize': 14,
+	'axes.titlesize': 'medium',
+	'axes.labelsize': 'medium',
+	'legend.fontsize': 'medium',
+	'font.family': 'serif',
+	'font.serif': 'Computer Modern Roman',
+	'font.size': 14,
+	'text.usetex': True
+}
 matplotlib.rcParams.update(params)
 
 
