@@ -231,9 +231,12 @@ def add_derived_dict_to_mcmc_chain( derivedparfn, chain_file ):
 	deriveddic = derivedparfn( pdic )
 	derivedlist = deriveddic.keys()
 	derivedarray = numpy.array(deriveddic.values()).T
-	f = h5py.File(chain_file, "r+")
+	f = h5py.File(chain_file, 'r+')
+	# If a derivedchain already exists, delete it before proceeding
+	if 'derivedchain' in f:
+		del f['derivedchain']
 	# Create the chain structure to hold the derived chain array
-	fderivedchain = f.create_dataset("derivedchain", data=derivedarray)
+	fderivedchain = f.create_dataset('derivedchain', data=derivedarray)
 	f['derivedchain'].attrs['parlist'] = derivedlist
 	f.close()
 
