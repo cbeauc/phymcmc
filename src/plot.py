@@ -18,6 +18,19 @@ params = {
 }
 matplotlib.rcParams.update(params)
 
+class grid_plot(object):
+	def __init__(self, (gridheight,gridwidth)):
+		import matplotlib.pyplot
+		self.gh = gridheight
+		self.gw = gridwidth
+		# Setup the figure looking nice
+		self.fig = matplotlib.pyplot.figure()
+		self.fig.set_size_inches(3*self.gw,2.8*self.gh)
+		matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
+
+	def subaxes(self, idx):
+		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw))
+
 
 def convergence( chain_file, nburn=-1, parlist=None ):
 	pardict, chainattrs = phymbie.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
@@ -125,8 +138,6 @@ def choose_bins_n_weights(x, bins, linear=False):
 
 
 def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=-1 ):
-	import matplotlib.pyplot
-
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
@@ -139,9 +150,7 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		labels = keys
 
 	# Setup the figure looking nice
-	fig = matplotlib.pyplot.figure()
-	fig.set_size_inches(3*gw,2.8*gh)
-	matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
+	gridfig = grid_plot((gh,gw))
 
 	# Load the parameters of each chain file
 	pardicts = {key: [] for key in keys}
@@ -156,7 +165,7 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 
 	# Now start plotting each histogram
 	for i,key in enumerate(keys):
-		ax = matplotlib.pyplot.subplot2grid((gh,gw), (i/gw,i%gw))
+		ax = gridfig.subaxes(i)
 		nmax = 0.0
 		for cfn in range(len(chainfiles)):
 			if len(relative):
@@ -185,5 +194,5 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		ax.set_ylim(0, 1.1*nmax)
 		if key not in chainattrs['linpars']:
 			ax.set_xscale('log')
-	return fig
+	return gridfig.fig
 
