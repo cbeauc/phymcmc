@@ -41,6 +41,9 @@ def perform_fit(model, params, args, verbose=True, rep_fit=3):
 
 	# It's best to fit parameters in log space
 	pvec = numpy.log10(params.vector)
+	if verbose:
+		ssr = scost(pvec, model, params, args)
+		print( 'Starting ssr = %g\n' % ssr )
 
 	# Do rep_fit fits w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
 	for rep in range(rep_fit):
