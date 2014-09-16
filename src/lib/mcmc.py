@@ -209,6 +209,8 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	# 	change what steps get considered without losing anything!
 	if nburn < 0: # If user did not specify nburn
 		chainattrs['nburn'] = stored_nburn
+	elif 0.0 < nburn < 1.0:
+		chainattrs['nburn'] = int(round(chainattrs['filledlength']/chainattrs['nwalkers']*nburn))
 	else:
 		chainattrs['nburn'] = nburn
 	idx = numpy.arange(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
