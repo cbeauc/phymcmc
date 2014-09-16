@@ -211,11 +211,10 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 		chainattrs['nburn'] = stored_nburn
 	else:
 		chainattrs['nburn'] = nburn
-	idx = range(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
+	idx = numpy.arange(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
 	min_ssr_row = mcchaincopy[:chainattrs['filledlength'],0].argmin()
 	if min_ssr_row not in idx:
-		idx.insert(0,min_ssr_row) # We always keep our best-fit, no matter what!
-	idx = numpy.array(idx)
+		print('WARNING: Your best SSR was discarded when the burn-in was applied.')
 	# And now make my dictionary of parameters
 	for pi,pn in enumerate(chainattrs['parfit']):
 		pardict[pn] = mcchaincopy[idx,pi]
