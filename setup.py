@@ -12,5 +12,5 @@ setup(
 		"phymbie",
 		"phymbie.emcee"
 	],
-	package_dir = {'phymbie':'src'}
+	package_dir = {'phymbie':'src/lib'}
 )
