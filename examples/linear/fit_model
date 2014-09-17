@@ -1,0 +1,14 @@
+#!/usr/bin/python
+import linmod
+import numpy
+import phymbie.fits
+
+dat = numpy.loadtxt("lin.dat")
+
+# Would either load params or initialize and fit
+pdic = dict(slope=1.0,yint=1.0)
+pfit = ['slope','yint']
+
+# Now fit the parameters
+params = phymbie.fits.ParamStruct(pdic.copy(),pfit)
+params,bfssr = phymbie.fits.perform_fit(linmod.model,params,dat,verbose=True,rep_fit=3)

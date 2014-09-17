@@ -1,0 +1,16 @@
+#!/usr/bin/python
+import phymbie.mcmc
+import sys
+
+def add_biological_params( pdic ):
+	biodic = {}
+	N = 1.2e6
+	Volume = 0.5
+	# Example of a computed biological parameter (add as many as you want)
+	biodic['slotyint'] = pdic['slope']*pdic['yint']/Volume/N
+	return biodic
+
+# Read chain_file name from command-line (1st argument)
+chainfile = sys.argv[1]
+# Push biological params into chainfile
+phymbie.mcmc.add_derived_dict_to_mcmc_chain( add_biological_params, chainfile )

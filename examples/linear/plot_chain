@@ -1,0 +1,29 @@
+#!/usr/bin/python
+import os
+import phymbie.plot
+
+chainfile = os.path.abspath('outputs/chain_lin.hdf5')
+
+labeldic = {
+	'ssr': r'Sum squared resid, SSR',
+	'slope': r'slope, $m$',
+	'yint': r'$y_\mathrm{int}$',
+	'slotyint': r'Weird meaningless par'
+}
+allpars = ['ssr','slope','yint','slotyint']
+
+# Making triangle plot of param pairs
+if True:
+	plotpars = allpars[:-1]
+	plotlabels = plotpars
+	fig = phymbie.plot.triangle(plotpars, plotlabels, chainfile)
+	fig.savefig('outputs/triangle_lin.png', bbox_inches='tight')
+
+# Making histogram grid of all params
+if True:
+	colors = ['blue']
+	plotpars = allpars
+	plotlabels = [labeldic[key] for key in plotpars]
+	fig = phymbie.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
+	fig.savefig('outputs/hists_lin.pdf', bbox_inches='tight')
+
