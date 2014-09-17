@@ -41,8 +41,8 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
 		nburn = mcchain.attrs['nburn'],
-		stepsize = mcchain.attrs['stepsize'],
 		par = params,
+		stepsize = mcchain.attrs['stepsize'],
 		linbw = mcchain.attrs['linbw'],
 		logbw = mcchain.attrs['linbw'],
 		linpars = mcchain.attrs['linpars'],
@@ -62,14 +62,16 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, nburn, stepsize, par, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, verbose=True, restart_from_file=False):
+	def __init__(self, chain_file, model, nwalkers, nsteps, nburn, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, verbose=True, restart_from_file=False):
+		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
 		self.nwalkers = nwalkers
 		self.nsteps = nsteps
 		self.nburn = nburn
-		self.stepsize = stepsize
 		self.par = par
+		# Optional arguments
+		self.stepsize = stepsize
 		self.linbw = linbw
 		self.logbw = logbw
 		self.linpars = linpars
