@@ -113,7 +113,7 @@ def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
 	fig = dfmtriangle.corner(data, labels=labels, truths=truths) 
 	# Now add a histogram for SSR
 	x = pardict['ssr']
-	ax = fig.axes[11]
+	ax = fig.axes[len(parlist)-2]
 	ax.set_visible(True)
 	ax.set_frame_on(True)
 	ax.set_title('SSR')
