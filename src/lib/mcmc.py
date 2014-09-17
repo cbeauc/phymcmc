@@ -97,9 +97,13 @@ class MCSampler( object ):
 		# the initial position array has dimensions (nwalker, nparams)
 		self.curpos = numpy.zeros( (self.nwalkers, self.npars) )
 		self.curlnprob = numpy.zeros( self.nwalkers )
+
 		# walker 0 gets started at the best fit position (centre)
 		self.curpos[0,:] = self.par.vector
 		self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
+		print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
+		print( ('%g '*self.npars) % tuple(self.par.vector) )
+
 		# the remaining walkers are distributed randomly, uniformly (lin or log)
 		wrem = self.nwalkers-1
 		bfcentrevec = numpy.array(self.par.vector)
