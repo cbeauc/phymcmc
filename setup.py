@@ -12,5 +12,8 @@ setup(
 		"phymbie",
 		"phymbie.emcee"
 	],
+	scripts = [
+		'src/bin/phymbie_mcmc_diagnostics'
+	],
 	package_dir = {'phymbie':'src/lib'}
 )
