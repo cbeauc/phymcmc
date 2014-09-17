@@ -1,8 +1,39 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#
+# =============================================================================
+#
+#                                   Preamble
+#
+# =============================================================================
+#
+
 import numpy
 import phymbie.mcmc
 import phymbie.plot
 import sys
+
+#
+# =============================================================================
+#
+#                                   Utilities
+#
+# =============================================================================
+#
 
 def brooksgelman( par ):
 	""" This function implements the Brooks-Gelman method for evaluating
@@ -141,6 +172,13 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.legend(loc='best')
 	ax.set_title( title )
 
+#
+# =============================================================================
+#
+#                                   Main
+#
+# =============================================================================
+#
 
 chainfile = sys.argv[1]
 savefile = sys.argv[2]
