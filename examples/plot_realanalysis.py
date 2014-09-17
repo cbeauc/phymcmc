@@ -33,7 +33,6 @@ import phymbie.model
 # =============================================================================
 #
 
-#datlin = numpy.loadtxt("lin.dat")
 strains = ['H275', 'Y275', 'I223', 'V223']
 sdir = '/tmp/Fits/'
 chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
