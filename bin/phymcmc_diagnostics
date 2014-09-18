@@ -85,13 +85,14 @@ def diagnostics( chain_file, savefile, parlist=None ):
 	assert remainder == 0.0, 'Error: your chain could not be reshaped into (nsteps,nwalkers). There are %d samples too many.' % remainder
 
 	# Now get ready for the plot of all plots
-	gridfig = phymcmc.plot.grid_plot((len(parlist),6))
+	ndiags = 6
+	gridfig = phymcmc.plot.grid_plot((len(parlist)+1,ndiags))
 
 	# Construct the (nsteps,nwalkers) array for each parameter
 	# and run the requested conversion test method.
 	for idx,key in enumerate(parlist):
 		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
-		complete_diagnostics_chart( gridfig, idx*6, key, pararray, lin=(key in chainattrs['linpars']) )
+		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
 
 	# Saving the figure
 	gridfig.fig.savefig('%s.png'%savefile, bbox_inches='tight')
