@@ -197,8 +197,12 @@ class MCSampler( object ):
 		lnprobs = []
 		twrite = time.time()
 		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
-			poss.append(pos)
-			lnprobs.append(lnprob)
+
+			# Store current pos + lnprob of each walker
+			poss.append(pos*1.0)
+			lnprobs.append(lnprob*1.0)
+
+			# Average fraction of accepted since start
 			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
 				if self.verbose:
