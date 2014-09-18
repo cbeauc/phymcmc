@@ -86,6 +86,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
 	sampler.acceptance_fraction = mcchain.attrs['acceptance_fraction']
+	sampler.acor = mcchain.attrs['acor']
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = -mcchaincopy[idx:,0]
@@ -115,6 +116,7 @@ class MCSampler( object ):
 		# Additional parameters/properties of sampler
 		self.npars = len(self.par.parfit)
 		self.acceptance_fraction = []
+		self.acor = []
 
 		# Check for bad values entered
 		assert 0.0 < self.linbw < 1.0, "MCMC parameter linboxwidth must be in (0,1)"
@@ -187,7 +189,6 @@ class MCSampler( object ):
 		if self.verbose:
 			print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
 
-
 	def run_mcmc(self, chunk_size=30000):
 		if self.verbose:
 			print('Starting the MCMC run...')
@@ -195,6 +196,7 @@ class MCSampler( object ):
 		# Now walk...
 		poss = []
 		lnprobs = []
+		meanpos = [ numpy.mean(self.curpos,axis=0) ]
 		twrite = time.time()
 		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
 
@@ -203,7 +205,14 @@ class MCSampler( object ):
 			lnprobs.append(lnprob*1.0)
 
 			# Average fraction of accepted since start
+			#	averaged over all walkers
 			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
+			# Integrated autocorrelation time since start
+			#	computed from average pos of all walkers at each step
+			meanpos.append(pos.mean(axis=0))
+			self.acor.append(emcee.autocorr.integrated_time(numpy.array(meanpos)))
+
+			# Print to file every once in a while
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
 				if self.verbose:
 					print('   accepting %d params took %g min' % (len(lnprobs)*self.nwalkers,(time.time()-twrite)/60.0))
@@ -216,6 +225,7 @@ class MCSampler( object ):
 				f['mcchain'][s:s+nl,1:] = numpy.array(poss).reshape((nl,self.npars))
 				f['mcchain'].attrs['filledlength'] = s+nl
 				f['mcchain'].attrs['acceptance_fraction'] = self.acceptance_fraction
+				f['mcchain'].attrs['acor'] = self.acor
 				f.close()
 				if self.verbose:
 					twrite = time.time()
@@ -237,6 +247,7 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	chainattrs = {}
 	chainattrs['parfit'] = mcchain.attrs['parfit']
 	chainattrs['acceptance_fraction'] = mcchain.attrs['acceptance_fraction']
+	chainattrs['acor'] = mcchain.attrs['acor']
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
