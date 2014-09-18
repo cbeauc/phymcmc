@@ -22,8 +22,8 @@
 # =============================================================================
 #
 
-import phymbie.plot
-import phymbie.model
+import phymcmc.plot
+import phymcmc.model
 
 #
 # =============================================================================
@@ -39,13 +39,13 @@ chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 
 plotpars = ['cpfu','tE', 'tI', 'b', 'vom', 'pfm', 'pfs', 'pr', 'p2r']
 #plotpars = ['cpfu','tE', 'tI', 'b', 'pr', 'p2r']
-#plotparlabels = [phymbie.model.parsymbs[key] for key in plotpars]
+#plotparlabels = [phymcmc.model.parsymbs[key] for key in plotpars]
 
 # Making the triangle plots
 if True:
 	for si,strain in enumerate(strains):
 		plotparlabels = plotpars
-		fig = phymbie.plot.triangle(plotpars, plotparlabels, chain_files[si])
+		fig = phymcmc.plot.triangle(plotpars, plotparlabels, chain_files[si])
 		fig.savefig('realouts/'+strain+'_triangle.png')
 
 # Making individual, relative hist plots
@@ -53,8 +53,8 @@ if False:
 	colorlist = ['black','red','blue','green']
 	relative = [0, 0, 2, 2]
 	for p in ['tE']:
-		parlabel = phymbie.model.parnames[p]+', '+phymbie.model.parsymbs[p]
-		fig = phymbie.plot.hist(p, chain_files, colorlist, title=parlabel)
+		parlabel = phymcmc.model.parnames[p]+', '+phymcmc.model.parsymbs[p]
+		fig = phymcmc.plot.hist(p, chain_files, colorlist, title=parlabel)
 		fig.savefig('realouts/hist_'+p+'.pdf')
 
 # Making a 3x2 grid of absolute hist plots
@@ -77,6 +77,6 @@ if False:
 	matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
 	for i,p in enumerate(plotpars):
 		ax = matplotlib.pyplot.subplot2grid((gh,gw), (i/gw,i%gw))
-		phymbie.plot.hist(p, chain_files, colorlist, fig=fig, ax=ax, title=parlabels[i], relative=relative)
+		phymcmc.plot.hist(p, chain_files, colorlist, fig=fig, ax=ax, title=parlabels[i], relative=relative)
 	fig.savefig('realouts/hist_eric_grid.pdf', bbox_inches='tight')
 

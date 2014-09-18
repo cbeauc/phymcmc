@@ -23,7 +23,7 @@
 
 import math
 import numpy
-import phymbie.mcmc
+import phymcmc.mcmc
 ### plotting STUFF
 import matplotlib
 matplotlib.use('Agg')
@@ -64,7 +64,7 @@ class grid_plot(object):
 
 
 def convergence( chain_file, nburn=-1, parlist=None ):
-	pardict, chainattrs = phymbie.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
+	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	niter = chainattrs['filledlength']
 	if parslist is None:
 		parlist = chainattrs['parfit']
@@ -123,7 +123,7 @@ def convergence( chain_file, nburn=-1, parlist=None ):
 
 
 def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
-	pardict, chainattrs = phymbie.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
+	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	labels = rawlabels[:]
 	# Data
 	data = []
@@ -188,7 +188,7 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 	bestfits = {key: [] for key in keys}
 	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
-		pdic,chainattrs = phymbie.mcmc.load_mcmc_chain( cf, nburn=nburn )
+		pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( cf, nburn=nburn )
 		clen = min( clen, len(pdic[keys[0]]) )
 		for key in keys:
 			pardicts[key].append( pdic[key] )

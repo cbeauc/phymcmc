@@ -22,7 +22,7 @@
 # =============================================================================
 #
 
-import phymbie.mcmc
+import phymcmc.mcmc
 import sys
 
 #
@@ -52,4 +52,4 @@ def add_biological_params( pdic ):
 # Read chain_file name from command-line (1st argument)
 chainfile = sys.argv[1]
 # Push biological params into chainfile
-phymbie.mcmc.add_derived_dict_to_mcmc_chain( add_biological_params, chainfile )
+phymcmc.mcmc.add_derived_dict_to_mcmc_chain( add_biological_params, chainfile )

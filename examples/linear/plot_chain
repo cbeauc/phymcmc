@@ -23,7 +23,7 @@
 #
 
 import os
-import phymbie.plot
+import phymcmc.plot
 
 #
 # =============================================================================
@@ -47,7 +47,7 @@ allpars = ['ssr','slope','yint','slotyint']
 if True:
 	plotpars = allpars[:-1]
 	plotlabels = plotpars
-	fig = phymbie.plot.triangle(plotpars, plotlabels, chainfile)
+	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
 	fig.savefig('outputs/triangle_lin.png', bbox_inches='tight')
 
 # Making histogram grid of all params
@@ -55,6 +55,6 @@ if True:
 	colors = ['blue']
 	plotpars = allpars
 	plotlabels = [labeldic[key] for key in plotpars]
-	fig = phymbie.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
+	fig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
 	fig.savefig('outputs/hists_lin.pdf', bbox_inches='tight')
 

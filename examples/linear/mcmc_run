@@ -24,8 +24,8 @@
 
 import linmod
 import numpy
-import phymbie.fits
-import phymbie.mcmc
+import phymcmc.fits
+import phymcmc.mcmc
 
 #
 # =============================================================================
@@ -41,7 +41,7 @@ dat = numpy.loadtxt("lin.dat")
 # 	should normally be the output of a best-fit to start in good place
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
-params = phymbie.fits.ParamStruct(pdic.copy(),pfit)
+params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
 
 # MCMC parameters
 mcpars = dict(
@@ -60,6 +60,6 @@ mcpars = dict(
 )
 
 # Setting up the MCMC sampler
-mcsampler = phymbie.mcmc.MCSampler( **mcpars )
+mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
 # Performing the MCMC run
 mcsampler.run_mcmc()

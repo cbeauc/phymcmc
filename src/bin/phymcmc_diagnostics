@@ -23,8 +23,8 @@
 #
 
 import numpy
-import phymbie.mcmc
-import phymbie.plot
+import phymcmc.mcmc
+import phymcmc.plot
 import sys
 
 #
@@ -73,7 +73,7 @@ def brooksgelman( par ):
 
 def diagnostics( chain_file, savefile, parlist=None ):
 	# Get the chain first
-	pardict, chainattrs = phymbie.mcmc.load_mcmc_chain(chain_file, nburn=0)
+	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=0)
 
 	# Construct parlist from chain if none provided
 	if parlist is None:
@@ -85,7 +85,7 @@ def diagnostics( chain_file, savefile, parlist=None ):
 	assert remainder == 0.0, 'Error: your chain could not be reshaped into (nsteps,nwalkers). There are %d samples too many.' % remainder
 
 	# Now get ready for the plot of all plots
-	gridfig = phymbie.plot.grid_plot((len(parlist),6))
+	gridfig = phymcmc.plot.grid_plot((len(parlist),6))
 
 	# Construct the (nsteps,nwalkers) array for each parameter
 	# and run the requested conversion test method.

@@ -43,12 +43,12 @@ class model(object):
 	def get_lnprob(cls,pvec,par,dat):
 		"""
 			Determine the lnprob for the model, given the parameters.
-			This function MUST be defined in order for phymbie.mcmc to work.
+			This function MUST be defined in order for phymcmc.mcmc to work.
 			In this function, you can do additional calculations like add
 			some correction to the log posterior likelihood function (e.g.
 			for running a log parameter in lin scale or whatever). But
 			DO NOT check here for NaN. The sanity parsing of the SSR value
-			is done by the lnprobfn function in the phymbie MCMC library.
+			is done by the lnprobfn function in the phymcmc MCMC library.
 		"""
 		try:
 			self = cls(pvec,par)

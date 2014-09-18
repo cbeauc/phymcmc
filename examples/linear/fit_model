@@ -24,7 +24,7 @@
 
 import linmod
 import numpy
-import phymbie.fits
+import phymcmc.fits
 
 #
 # =============================================================================
@@ -41,5 +41,5 @@ pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
 
 # Now fit the parameters
-params = phymbie.fits.ParamStruct(pdic.copy(),pfit)
-params,bfssr = phymbie.fits.perform_fit(linmod.model,params,dat,verbose=True,rep_fit=3)
+params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
+params,bfssr = phymcmc.fits.perform_fit(linmod.model,params,dat,verbose=True,rep_fit=3)

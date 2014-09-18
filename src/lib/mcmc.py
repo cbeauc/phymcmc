@@ -22,7 +22,7 @@
 #
 
 from __future__ import print_function 
-from phymbie import emcee
+from phymcmc import emcee
 import h5py
 import math
 import numpy
@@ -64,7 +64,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	# Recuperate best-fit params
 	pdic = eval( mcchain.attrs['pardict'] )
 	pfit = mcchain.attrs['parfit'][1:] # discard SSR as a fitting parameter
-	params = phymbie.fits.ParamStruct(pdic,pfit)
+	params = phymcmc.fits.ParamStruct(pdic,pfit)
 	# Set sampler parameters from chain_file
 	mcpars = dict(
 		chain_file = chain_file,
