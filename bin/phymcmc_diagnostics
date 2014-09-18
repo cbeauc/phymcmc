@@ -92,9 +92,10 @@ def diagnostics( chain_file, savefile, parlist=None ):
 	# and run the requested conversion test method.
 	for idx,key in enumerate(parlist):
 		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
-		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
+		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, chainattrs['acor'][:,idx], lin=(key in chainattrs['linpars']) )
 
 	# Add more overall (not per-parameter) diagnostics (?)
+	# Acceptance fraction
 	ax = gridfig.subaxes(len(parlist)*ndiags)
 	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
 	ax.set_title(r'acceptance fraction')
@@ -104,7 +105,7 @@ def diagnostics( chain_file, savefile, parlist=None ):
 	gridfig.fig.savefig('%s.png'%savefile, bbox_inches='tight')
 
 
-def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
+def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=False ):
 	i = 0
 	N = len(pararray)
 	iters = range(N)
@@ -146,16 +147,12 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.plot(iters,numpy.array(tmp).T)
 	ax.set_yscale( yscale )
 
-	# Autocorrelation
+	# Integrated autocorrelation time
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
-	ax.set_title('autocorrelations')
-	tmp = []
-	for tchn in pararray.T:
-		chn = tchn - tchn.mean()
-		tmp.append( numpy.correlate(chn,chn,'same')/chn.var()/N )
-		tmp[-1] = tmp[-1][len(tmp[-1])/2:]
-	ax.plot(range(len(tmp[0])),numpy.array(tmp).T)
+	ax.set_title(r'Integrated autocorr time')
+	ax.plot(range(N-1),autocorr)
+	ax.set_ylim(bottom=0.0)
 
 	# Brooks-Gelman
 	dis = 1
