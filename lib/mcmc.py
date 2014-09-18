@@ -85,6 +85,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	)
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
+	sampler.acceptance_fraction = mcchain.attrs['acceptance_fraction']
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = -mcchaincopy[idx:,0]
@@ -110,7 +111,10 @@ class MCSampler( object ):
 		self.threads = threads
 		self.pool = pool
 		self.verbose = verbose
+
+		# Additional parameters/properties of sampler
 		self.npars = len(self.par.parfit)
+		self.acceptance_fraction = []
 
 		# Check for bad values entered
 		assert 0.0 < self.linbw < 1.0, "MCMC parameter linboxwidth must be in (0,1)"
@@ -195,6 +199,7 @@ class MCSampler( object ):
 		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
 			poss.append(pos)
 			lnprobs.append(lnprob)
+			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
 				if self.verbose:
 					print('   accepting %d params took %g min' % (len(lnprobs)*self.nwalkers,(time.time()-twrite)/60.0))
@@ -206,6 +211,7 @@ class MCSampler( object ):
 				f['mcchain'][s:s+nl,0] = -lnprobs
 				f['mcchain'][s:s+nl,1:] = numpy.array(poss).reshape((nl,self.npars))
 				f['mcchain'].attrs['filledlength'] = s+nl
+				f['mcchain'].attrs['acceptance_fraction'] = self.acceptance_fraction
 				f.close()
 				if self.verbose:
 					twrite = time.time()
@@ -226,6 +232,7 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	# Build dictionary of chain attributes
 	chainattrs = {}
 	chainattrs['parfit'] = mcchain.attrs['parfit']
+	chainattrs['acceptance_fraction'] = mcchain.attrs['acceptance_fraction']
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']

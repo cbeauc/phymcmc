@@ -94,6 +94,12 @@ def diagnostics( chain_file, savefile, parlist=None ):
 		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
 		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
 
+	# Add more overall (not per-parameter) diagnostics (?)
+	ax = gridfig.subaxes(len(parlist)*ndiags)
+	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
+	ax.set_title(r'acceptance fraction')
+
+
 	# Saving the figure
 	gridfig.fig.savefig('%s.png'%savefile, bbox_inches='tight')
 
