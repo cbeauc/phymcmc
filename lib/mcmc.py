@@ -91,6 +91,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = -mcchaincopy[idx:,0]
 	sampler.curpos = mcchaincopy[idx:,1:]
+	f.close()
 	return sampler
 
 
@@ -125,45 +126,64 @@ class MCSampler( object ):
 		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=(self.model,self.par,self.args), threads=self.threads, pool=self.pool)
 
 		if not restart_from_file:
-			self.initialize_the_walk()
+			tstart = time.time()
+			self.initialize_the_walkers()
+			self.initialize_the_chainfile()
+			if self.verbose:
+				print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
 
 
-	def initialize_the_walk(self):
-		tstart = time.time()
-		# Position all your walkers
-		if self.verbose:
-			print('Positioning the walkers')
-		# the initial position array has dimensions (nwalker, nparams)
-		self.curpos = numpy.zeros( (self.nwalkers, self.npars) )
-		self.curlnprob = numpy.zeros( self.nwalkers )
+	def initialize_the_walkers(self,oldchainfile=None):
+		if oldchainfile is None:
+			# Position all your walkers
+			if self.verbose:
+				print('Positioning the walkers')
+			# the initial position array has dimensions (nwalker, nparams)
+			self.curpos = numpy.zeros( (self.nwalkers, self.npars) )
+			self.curlnprob = numpy.zeros( self.nwalkers )
 
-		# walker 0 gets started at the best fit position (centre)
-		self.curpos[0,:] = self.par.vector
-		self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
-		print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
-		print( ('%g '*self.npars) % tuple(self.par.vector) )
+			# walker 0 gets started at the best fit position (centre)
+			self.curpos[0,:] = self.par.vector
+			self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
+			print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
+			print( ('%g '*self.npars) % tuple(self.par.vector) )
 
-		# the remaining walkers are distributed randomly, uniformly (lin or log)
-		wrem = self.nwalkers-1
-		bfcentrevec = numpy.array(self.par.vector)
-		while wrem:
-			# generate a candidate position for a walker
-			pcandidate = bfcentrevec.copy()
-			for pi,pname in enumerate(self.par.parfit):
-				if pname in self.linpars:
-					pcandidate[pi] *= random.uniform(1.0-self.linbw,1.0+self.linbw)
-				else:
-					pcandidate[pi] *= 10.0**random.uniform(-self.logbw,self.logbw)
-			# accept or reject the candidate position
-			lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
-			if not math.isinf( lprob ):
-				self.curlnprob[wrem] = lprob
-				self.curpos[wrem,:] = pcandidate
-				if self.verbose:
-					print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
-					print( ('%g '*self.npars) % tuple(pcandidate) )
-				wrem -= 1
+			# the remaining walkers are distributed randomly, uniformly (lin or log)
+			wrem = self.nwalkers-1
+			bfcentrevec = numpy.array(self.par.vector)
+			while wrem:
+				# generate a candidate position for a walker
+				pcandidate = bfcentrevec.copy()
+				for pi,pname in enumerate(self.par.parfit):
+					if pname in self.linpars:
+						pcandidate[pi] *= random.uniform(1.0-self.linbw,1.0+self.linbw)
+					else:
+						pcandidate[pi] *= 10.0**random.uniform(-self.logbw,self.logbw)
+				# accept or reject the candidate position
+				lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
+				if not math.isinf( lprob ):
+					self.curlnprob[wrem] = lprob
+					self.curpos[wrem,:] = pcandidate
+					if self.verbose:
+						print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
+						print( ('%g '*self.npars) % tuple(pcandidate) )
+					wrem -= 1
+		else:
+			if self.verbose:
+				print('Reading walkers initial pos from end of %s'% oldchainfile)
+			f = h5py.File(oldchainfile, 'r')
+			mcchain = f['mcchain']
+			mcchaincopy = mcchain.value
+			# Make sure the # walkers in old chain match what's requested
+			assert mcchain.attrs['nwalkers'] == self.nwalkers, 'The number of walkers in %s (%d) is not what you requested (%d).' % (oldchainfile,mcchain.attrs['nwalkers'],self.nwalkers)
+			# Now re-position your walkers at their last location
+			idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
+			self.curlnprob = -mcchaincopy[idx:,0]
+			self.curpos = mcchaincopy[idx:,1:]
+			f.close()
 
+
+	def initialize_the_chainfile(self):
 		# Initialize the chain file
 		# Open/create the HDF5 chain file
 		f = h5py.File(self.chain_file, "w")
@@ -186,8 +206,6 @@ class MCSampler( object ):
 		f['mcchain'][:nl,1:] = self.curpos
 		f['mcchain'].attrs['filledlength'] = nl
 		f.close()
-		if self.verbose:
-			print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
 
 	def run_mcmc(self, chunk_size=30000):
 		if self.verbose:
@@ -205,10 +223,11 @@ class MCSampler( object ):
 			lnprobs.append(lnprob*1.0)
 
 			# Average fraction of accepted since start
-			#	averaged over all walkers
+			#	averaged over all walkers (ideally in 0.2-0.5 range).
 			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
 			# Integrated autocorrelation time since start
-			#	computed from average pos of all walkers at each step
+			#	computed from average pos of all walkers at each step.
+			#	emcee developer suggests a burn-in time of ~ 10x autocor time.
 			meanpos.append(pos.mean(axis=0))
 			self.acor.append(emcee.autocorr.integrated_time(numpy.array(meanpos)))
 
