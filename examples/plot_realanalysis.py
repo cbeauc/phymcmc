@@ -13,70 +13,77 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =============================================================================
 
-#
-# =============================================================================
-#
-#                                   Preamble
-#
-# =============================================================================
-#
-
-import phymcmc.plot
-import phymcmc.model
-
-#
-# =============================================================================
-#
-#                                   Main
-#
-# =============================================================================
-#
+import phymbie.plot
+import phymbie.model
 
 strains = ['H275', 'Y275', 'I223', 'V223']
 sdir = '/tmp/Fits/'
 chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 
-plotpars = ['cpfu','tE', 'tI', 'b', 'vom', 'pfm', 'pfs', 'pr', 'p2r']
-#plotpars = ['cpfu','tE', 'tI', 'b', 'pr', 'p2r']
-#plotparlabels = [phymcmc.model.parsymbs[key] for key in plotpars]
+parlabeldict = {
+	'ssr': r'Sum of squared residuals',
+	'cpfu': r'Inf.\ clearance, $c_\mathrm{pfu}$ (1/h)',
+	'tE': r'Eclipse phase, $\tau_E$ (h)',
+	'tI': r'Infectious lifespan, $\tau_I$ (h)',
+	'b': r'Infec.\ rate, $\beta$, (mL/PFU/h)',
+	'vom': r'Inoculum, $V_{0,MC}$, (PFU/mL)',
+	'pfm': r'Prod.\ rate MC (PFU/mL/h)',
+	'pfs': r'Prod.\ rate SC (PFU/mL/h)',
+	'pr': r'Prod.\ rate (RNA/mL/h)',
+	'p2r': r'Inoculum ratio, (RNA/PFU)',
+	'R0': r'Basic repro.\ num., $R_0$',
+	'tinf': r'Infecting time, $t_\mathrm{inf}$ (min)',
+	'prcell': r'Prod.\ rate (RNA/cell/h)',
+	'pfcell': r'Prod.\ rate (PFU/cell/h)',
+	'burst': r'RNA burst size (RNA/cell)',
+	'inf2rna': r'$R_0$/burst (infection/RNA)',
+	'pfs2fm': r'PFU prod.\ ratio, $p_\mathrm{SC}/p_\mathrm{MC}$',
+	'pf2r': r'Infectiousness, $p_\mathrm{PFU/RNA}$',
+	'moi': r'MOI',
+	'vop2r': r'Inocul.\ ratio, (PFU/RNA)'
+}
 
 # Making the triangle plots
-if True:
+if False:
+	plotpars = ['ssr','cpfu','tE','tI','b','vom','pfm','pfs','pr','p2r']
 	for si,strain in enumerate(strains):
 		plotparlabels = plotpars
-		fig = phymcmc.plot.triangle(plotpars, plotparlabels, chain_files[si])
+		fig = phymbie.plot.triangle(plotpars, plotparlabels, chain_files[si])
 		fig.savefig('realouts/'+strain+'_triangle.png')
 
-# Making individual, relative hist plots
-if False:
-	colorlist = ['black','red','blue','green']
-	relative = [0, 0, 2, 2]
-	for p in ['tE']:
-		parlabel = phymcmc.model.parnames[p]+', '+phymcmc.model.parsymbs[p]
-		fig = phymcmc.plot.hist(p, chain_files, colorlist, title=parlabel)
-		fig.savefig('realouts/hist_'+p+'.pdf')
-
-# Making a 3x2 grid of absolute hist plots
+# Making a grid of relative hist plots
 if False:
 	strains = ['H275', 'Y275', 'I223', 'V223']
 	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 	relative = [0, 0, 2, 2]
-	colorlist = ['black','red','blue', 'green']
-	plotpars = ['cpfu', 'tE', 'tI', 'tinf', 'R0', 'burst', 'prcell', 'pfs2fm']
-	parlabels = [r'Inf.\ clearance, $c_\mathrm{pfu}$ (1/h)', r'Eclipse phase, $\tau_E$ (h)', r'Infectious lifespan, $\tau_I$ (h)', r'Infecting time, $t_\mathrm{inf}$ (min)', r'Basic repro.\ num., $R_0$', r'RNA burst size (RNA/cell)', r'Prod.\ rate (RNA/h/cell)', r'PFU prod.\ ratio, $p_\mathrm{SC}/p_\mathrm{MC}$']
-	#r'Eclipse phase, $\tau_E$ (h)', r'Prod.\ rate (RNA/h/cell)', r'Infectious lifespan, $\tau_I$ (h)', r'$R_0$/burst (infection/RNA)', r'Infecting time, $t_\mathrm{inf}$ (min)', r'Basic repro.\ num., $R_0$']
-	import matplotlib
-	matplotlib.use('Agg')
-	import matplotlib.pyplot
-	import numpy
-	gw = 4
-	gh = 2
-	fig = matplotlib.pyplot.figure()
-	fig.set_size_inches(3*gw,2.8*gh)
-	matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
-	for i,p in enumerate(plotpars):
-		ax = matplotlib.pyplot.subplot2grid((gh,gw), (i/gw,i%gw))
-		phymcmc.plot.hist(p, chain_files, colorlist, fig=fig, ax=ax, title=parlabels[i], relative=relative)
-	fig.savefig('realouts/hist_eric_grid.pdf', bbox_inches='tight')
+	colors = ['black','red','blue', 'green']
+	plotpars = ['tE', 'tinf', 'tI', 'cpfu', 'prcell', 'pfcell', 'pf2r', 'pfs2fm', 'b', 'vom', 'vop2r']
+	plotlabels = [parlabeldict[key] for key in plotpars]
+	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
+	fig.savefig('realouts/hist_rel_HYIV.pdf', bbox_inches='tight')
+
+# Making a grid of absolute hist plots for I vs V
+if False:
+	strains = ['I223', 'V223']
+	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
+	colors = ['blue', 'green']
+	relative = []
+	plotpars = ['tE','pfcell','tinf','prcell','tI','b']
+	plotlabels = [parlabeldict[key] for key in plotpars]
+	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative)
+	fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
+
+# Making a grid of absolute hist plots for H vs I
+if True:
+	strains = ['H275', 'Y275', 'I223', 'V223']
+	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
+	colors = ['black','red','blue', 'green']
+	relative = []
+	plotpars = ['cpfu','pfs2fm','pf2r']
+	plotlabels = [parlabeldict[key] for key in plotpars]
+	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(1,3), labels=plotlabels, relative=relative)
+	fig.savefig('realouts/hist_abs_HI.pdf', bbox_inches='tight')
 
