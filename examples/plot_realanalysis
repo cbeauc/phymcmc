@@ -16,8 +16,8 @@
 #
 # =============================================================================
 
-import phymbie.plot
-import phymbie.model
+import phymcmc.plot
+import phymcmc.model
 
 strains = ['H275', 'Y275', 'I223', 'V223']
 sdir = '/tmp/Fits/'
@@ -54,6 +54,17 @@ if False:
 		fig = phymbie.plot.triangle(plotpars, plotparlabels, chain_files[si])
 		fig.savefig('realouts/'+strain+'_triangle.png')
 
+# Making a grid of absolute hist plots for I vs V (Fig 1)
+if True:
+	strains = ['I223', 'V223']
+	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
+	colors = ['blue', 'green']
+	relative = []
+	plotpars = ['tE','pfcell','tinf','prcell','tI','b']
+	plotlabels = [parlabeldict[key] for key in plotpars]
+	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative, nburn=0)
+	fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
+
 # Making a grid of relative hist plots
 if False:
 	strains = ['H275', 'Y275', 'I223', 'V223']
@@ -65,19 +76,8 @@ if False:
 	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
 	fig.savefig('realouts/hist_rel_HYIV.pdf', bbox_inches='tight')
 
-# Making a grid of absolute hist plots for I vs V
-if False:
-	strains = ['I223', 'V223']
-	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
-	colors = ['blue', 'green']
-	relative = []
-	plotpars = ['tE','pfcell','tinf','prcell','tI','b']
-	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative)
-	fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
-
 # Making a grid of absolute hist plots for H vs I
-if True:
+if False:
 	strains = ['H275', 'Y275', 'I223', 'V223']
 	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 	colors = ['black','red','blue', 'green']
