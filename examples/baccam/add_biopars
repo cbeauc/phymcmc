@@ -1,0 +1,19 @@
+#!/usr/bin/python
+import numpy
+import phymcmc.mcmc
+import sys
+
+def add_biological_params( pdic ):
+	biodic = {}
+	# Basic reproductive number
+	biodic['R0'] = pdic['p']*pdic['b']*pdic['N']*pdic['tI']/pdic['c']
+	# Infecting time (h)
+	biodic['tinf'] = numpy.sqrt(2.0*pdic['N']/pdic['p']/pdic['b'])
+	# Half-life (h)
+	biodic['chalf'] = numpy.log(2.0)/pdic['c']
+	return biodic
+
+# Read chain_file name from command-line (1st argument)
+chainfile = sys.argv[1]
+# Push biological params into chainfile
+phymcmc.mcmc.add_derived_dict_to_mcmc_chain( add_biological_params, chainfile )

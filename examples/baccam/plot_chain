@@ -1,0 +1,52 @@
+#!/usr/bin/env python
+# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =============================================================================
+
+import os
+import phymcmc.plot
+import sys
+
+chainfile = sys.argv[1]
+fname = chainfile.split('chain_')[1].split('.hdf5')[0]
+
+labeldic = {
+	'ssr': r'Sum squared resid, SSR',
+	'V0': r'Inoculum, $V_0$, (TCID$_{50}$/mL)',
+	'b': r'Infectiousness, $\beta$ (mL/TCID$_{50}$/h)',
+	'p': r'Prod.\ rate, $p$ (TCID$_{50}$/mL/h)',
+    'c': r'Clearance, $c$ (1/h)',
+    'R0': r'Basic repro.\ num., $R_0$',
+    'tinf': r'Infecting time, $t_\mathrm{inf}$ (h)',
+    'chalf': r'Virus half-life, ln(2)/c (h)'
+}
+allpars = ['ssr','V0','b','p','c','R0','tinf','chalf']
+
+# Making triangle plot of param pairs
+if True:
+	plotpars = allpars[:5]
+	plotlabels = plotpars
+	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
+	fig.savefig('outputs/triangle_%s.png'%fname, bbox_inches='tight')
+
+# Making histogram grid of all params
+if True:
+	colors = ['blue']
+	plotpars = allpars
+	plotlabels = [labeldic[key] for key in plotpars]
+	fig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(2,4), labels=plotlabels)
+	fig.savefig('outputs/hists_%s.pdf'%fname, bbox_inches='tight')
+

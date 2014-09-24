@@ -1,0 +1,40 @@
+#!/usr/bin/python
+import baccam
+import numpy
+import phymcmc.fits
+import phymcmc.mcmc
+
+dat = numpy.loadtxt("baccam.dat")
+dathpi = dat[:,0]
+datV = dat[:,1]
+dat = (dathpi,datV)
+
+# Centre location from which to launch walkers
+# 	should normally be the output of a best-fit to start in good place
+# Levenberg-Marquardt (final fit, ssr = 2.69228)
+pdic = {'Vlim': 3.1622776601683795, 'nI': 16, 'c': 0.14348164740989799, 'b': 1.5655468237418551e-07, 'N': 400000000.0, 'V0': 56.255837462685221, 'p': 0.0011636160041053807, 'tI': 24.0}
+pfit = ['p','c','b','V0']
+params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
+
+
+# MCMC parameters
+mcpars = dict(
+	chain_file = 'outputs/chain_burn1000.hdf5',
+	model = baccam.model,
+	nwalkers = 300,
+	nsteps = 1000,
+	nburn = 0,
+	par = params,
+	# Parameters over which walkers will be linearly distributed initially
+	# Note that all parameters will be walked in LINEAR space
+	linpars = ['ssr','tI'],
+	# Arguments (args) passed to lnpostfn such that lnpostfn(pvec,par,args)
+	args = dat,
+	threads = 4
+)
+
+# Setting up the MCMC sampler
+mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
+# Performing the MCMC run
+mcsampler.run_mcmc()
+

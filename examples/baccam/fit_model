@@ -1,0 +1,31 @@
+#!/usr/bin/python
+import baccam
+import numpy
+import phymcmc.fits
+
+dat = numpy.loadtxt("baccam.dat")
+dathpi = dat[:,0]
+datV = dat[:,1]
+dat = (dathpi,datV)
+
+# Would either load params or initialize and fit
+pdic = dict(
+	Vlim = 10.0**0.5, # Limit of detection for V
+	N = 4.0e8,	# Ncells as per paper
+	tI = 24.0, nI=16,
+	p = datV.max()*0.1/4.0e8,
+	c = 0.1,
+	b = 1.0/datV.max(),
+	V0 = datV[0]
+)
+pfit = ['p','c','b','V0']
+params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
+
+# Fit model to data
+params,bfssr = phymcmc.fits.perform_fit(baccam.model,params,dat)
+
+# Solve and save results
+t = numpy.linspace(0.0,dathpi[-1])
+res = baccam.model(params.vector, params).get_solution(t)
+mV = numpy.hstack((numpy.matrix(t).T,res))
+numpy.savetxt('outputs/soln_V.dat', mV)
