@@ -18,6 +18,8 @@
 
 import phymcmc.plot
 import phymcmc.model
+import numpy
+import matplotlib.ticker
 
 strains = ['H275', 'Y275', 'I223', 'V223']
 sdir = '/tmp/Fits/'
@@ -29,7 +31,7 @@ parlabeldict = {
 	'tE': r'Eclipse phase, $\tau_E$ (h)',
 	'tI': r'Infectious lifespan, $\tau_I$ (h)',
 	'b': r'Infec.\ rate, $\beta$, (mL/PFU/h)',
-	'vom': r'Inoculum, $V_{0,MC}$, (PFU/mL)',
+	'vom': r'Inoculum, $V_{0,\mathrm{MC}}$, (PFU/mL)',
 	'pfm': r'Prod.\ rate MC (PFU/mL/h)',
 	'pfs': r'Prod.\ rate SC (PFU/mL/h)',
 	'pr': r'Prod.\ rate (RNA/mL/h)',
@@ -51,21 +53,29 @@ if False:
 	plotpars = ['ssr','cpfu','tE','tI','b','vom','pfm','pfs','pr','p2r']
 	for si,strain in enumerate(strains):
 		plotparlabels = plotpars
-		fig = phymbie.plot.triangle(plotpars, plotparlabels, chain_files[si])
+		fig = phymcmc.plot.triangle(plotpars, plotparlabels, chain_files[si])
 		fig.savefig('realouts/'+strain+'_triangle.png')
 
 # Making a grid of absolute hist plots for I vs V (Fig 1)
-if True:
+if False:
 	strains = ['I223', 'V223']
 	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 	colors = ['blue', 'green']
 	relative = []
 	plotpars = ['tE','pfcell','tinf','prcell','tI','b']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative, nburn=0)
+	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative, nburn=0)
+	# Add fig label (D) and stat signif (*)
+	ax = fig.axes[plotpars.index('tE')]
+	ax.text(4.5,1.0,r'(D)')
+	ax.text(11.5,0.7,r'($\star$)')
+	# Fix x-range and add stat signif (*)
+	ax = fig.axes[plotpars.index('tI')]
+	ax.set_xlim(left=0.0)
+	ax.text(41.0,0.08,r'($\star$)')
 	fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
 
-# Making a grid of relative hist plots
+# Making a grid of relative hist plots (Fig 3)
 if False:
 	strains = ['H275', 'Y275', 'I223', 'V223']
 	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
@@ -73,17 +83,47 @@ if False:
 	colors = ['black','red','blue', 'green']
 	plotpars = ['tE', 'tinf', 'tI', 'cpfu', 'prcell', 'pfcell', 'pf2r', 'pfs2fm', 'b', 'vom', 'vop2r']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
+	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
+	# Fix xlabels for first row (lin pars)
+	for key in ['tE','tinf','tI','cpfu']:
+		ax = fig.axes[plotpars.index(key)]
+		ax.set_xticks(numpy.arange(0.0,2.5,0.5))
+		ax.set_xlim(0.0,2.0)
+		ax.xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(0.1))
+	# Fix xlabels for V0MC
+	ax = fig.axes[plotpars.index('vom')]
+	ax.set_xlim(4.0e-3,500.0)
+	# Fix xlabels for V0p2r
+	ax = fig.axes[plotpars.index('vop2r')]
+	ax.set_xlim(1.0e-2,1.0e3)
+	# Add legend in last pannel
+	ax = fig.axes[len(plotpars)-1]
+	ax.text(3.0e4,1.05,r'WT-H275',color=colors[0])
+	ax.text(3.0e4,0.85,r'MUT-H275Y',color=colors[1])
+	ax.text(3.0e4,0.55,r'WT-I223',color=colors[2])
+	ax.text(3.0e4,0.35,r'MUT-I223V',color=colors[3])
 	fig.savefig('realouts/hist_rel_HYIV.pdf', bbox_inches='tight')
 
-# Making a grid of absolute hist plots for H vs I
-if False:
+# Making a grid of absolute hist plots for previous vs current (Fig 5)
+if True:
 	strains = ['H275', 'Y275', 'I223', 'V223']
 	chain_files = [sdir+strn+'/'+strn+'_chain.hdf5' for strn in strains]
 	colors = ['black','red','blue', 'green']
 	relative = []
 	plotpars = ['cpfu','pfs2fm','pf2r']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymbie.plot.hist_grid(plotpars, chain_files, colors, dims=(1,3), labels=plotlabels, relative=relative)
+	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(2,2), labels=plotlabels, relative=relative)
+	# Fix xaxis for cpfu
+	ax = fig.axes[plotpars.index('cpfu')]
+	ax.set_xticks(numpy.arange(0.0,0.25,0.05))
+	ax.set_xlim(0.03,0.22)
+	ax.xaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(0.01))
+	# Add a legend
+	ax = fig.axes[len(plotpars)-1]
+	ax.text(3.0e0,2.3,r'(D)',color=colors[0])
+	ax.text(3.0e0,1.8,r'WT-H275 (Pinilla, 2012)',color=colors[0])
+	ax.text(3.0e0,1.4,r'MUT-H275Y (Pinilla, 2012)',color=colors[1])
+	ax.text(3.0e0,0.8,r'WT-I223 (current)',color=colors[2])
+	ax.text(3.0e0,0.4,r'MUT-I223V (current)',color=colors[3])
 	fig.savefig('realouts/hist_abs_HI.pdf', bbox_inches='tight')
 
