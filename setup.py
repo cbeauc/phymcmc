@@ -13,7 +13,8 @@ setup(
 		'phymcmc.emcee'
 	],
 	scripts = [
-		'bin/phymcmc_diagnostics'
+		'bin/phymcmc_diagnostics',
+		'bin/phymcmc_parstats'
 	],
 	package_dir = {'phymcmc':'lib'}
 )
