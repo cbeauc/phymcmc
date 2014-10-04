@@ -177,9 +177,10 @@ class MCSampler( object ):
 			# Make sure the # walkers in old chain match what's requested
 			assert mcchain.attrs['nwalkers'] == self.nwalkers, 'The number of walkers in %s (%d) is not what you requested (%d).' % (oldchainfile,mcchain.attrs['nwalkers'],self.nwalkers)
 			# Now re-position your walkers at their last location
-			idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
-			self.curlnprob = -mcchaincopy[idx:,0]
-			self.curpos = mcchaincopy[idx:,1:]
+			idf = mcchain.attrs['filledlength']
+			idi = idf-mcchain.attrs['nwalkers']
+			self.curlnprob = -mcchaincopy[idi:idf,0]
+			self.curpos = mcchaincopy[idi:idf,1:]
 			f.close()
 
 
