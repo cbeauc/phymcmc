@@ -57,10 +57,13 @@ def ztest( dist ):
 	print('p-val zed: %g (%g,%g)' % (pfin,pval1,pval2))
 
 
-def table_print( key, dist ):
-	pctiles = numpy.percentile(dist, [50.0, 2.5, 97.5])
-	print(key+': %g (%g--%g) CI' % tuple(pctiles))
-	print(key+': %g (%g--%g) CR' % tuple(bayes_confid_region(dist)))
+def table_print( dist, logs='10^', frac=0.95 ):
+	rem = (1.0-frac)/2.0*100.0
+	freq_pctiles = numpy.percentile(dist, [50.0, rem, 100.0-rem])
+	bayes_pctiles = bayes_credible_region(dist, frac=frac)
+	print(' '+logs+'%g [%g--%g] CI' % tuple(freq_pctiles))
+	print(' '+logs+'%g [%g--%g] CR' % tuple(bayes_pctiles))
+	return (bayes_pctiles, freq_pctiles)
 
 
 def roc( dis1, dis2 ):
@@ -82,7 +85,7 @@ def roc( dis1, dis2 ):
 	return sts
 
 
-def bayes_confid_region( dist, frac=0.95 ):
+def bayes_credible_region( dist, frac=0.95 ):
 	"""Compute the mode and frac% (95%) credible region"""
 	import scipy.interpolate
 	alpha = 1.-frac
@@ -111,15 +114,15 @@ def bayes_confid_region( dist, frac=0.95 ):
 
 def bayes_diff_pvalue( dist ):
 	# Get the mode
-	pdfkde = mykde(dist)
 	qqart = (dist < 0.0).mean()
 	if qqart < 5.0e-4:
 		print('p-val bayes: < 0.001')
 		return None
-	xrng = numpy.linspace(5.0e-4,1.0e3*dist[-1],100)
-	diff = xrng[ pdfkde(xrng)-pdfkde(0.0) < 0.0 ][0]
-	xmx = scipy.optimize.brentq(lambda x:pdfkde(x)-pdfkde(0.0), 5.0e-4, diff)
-	pval = 1.0-pdfkde.integrate_box_1d(min(0.0,xmx), max(0.0,xmx))
+	pdfkde = mykde(dist)
+	xmx = scipy.optimize.newton(lambda x:pdfkde(x)-pdfkde(0.0), 2.0*numpy.median(dist))
+	print (pdfkde(xmx), pdfkde(0.0), dist.mean())
+	assert xmx > 0.0, 'Error: xmax (%g) found < 0.0' % xmx
+	pval = 1.0-pdfkde.integrate_box_1d(0.0, xmx)
 	if False:
 		import pylab
 		xrng = numpy.linspace( dist[0], dist[-1], 200 )
@@ -136,7 +139,14 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 	# FIXME: nburn?
 	pdic1, attrs1 = phymcmc.mcmc.load_mcmc_chain(chainfile1, nburn=0)
 	if parlist is None:
-		parlist = attrs1['parfit'][1:] # don't include SSR
+		parlist = list(attrs1['parfit'])
+		for key,value in pdic1.items():
+			try:
+				len(value)
+			except TypeError:
+				continue
+			if key not in parlist:
+				parlist.append( key )
 
 	if chainfile2 is None:
 		attrs2 = attrs1
@@ -144,27 +154,31 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 	else:
 		pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfile2, nburn=0)
 		nvals = min(len(pdic1['ssr']), len(pdic2['ssr']))
-		assert attrs1['linpars'] == attrs2['linpars'], 'Error: Your 2 chains do not agree on which params are linear.'
 
 	for key in parlist:
 
 		# Sort dist and use log if appropriate
 		if key in attrs1['linpars']:
 			dis1 = numpy.sort(1.0*pdic1[key][-nvals:])
+			logs=''
+			print('%s' % key)
 		else:
 			dis1 = numpy.sort(numpy.log10(pdic1[key][-nvals:]))
-			print('log10(%s)' % key)
+			print('%s [log10 distributed]' % key)
+			logs='10^'
 		# Simple report on individual chains (no comparison)
-		table_print( key, dis1 )
+		table_print( dis1, logs=logs )
 
 		if chainfile2:
 			# Check in case parlist is not be same for both chains...
-			assert key in attrs2['parfit'], 'Error: key %s not in chain %s. Use parlist optional argument to fix this problem.' % (key,chainfile2)
+			assert len(pdic2[key]), 'Error: key %s not in chain %s. Use parlist optional argument to fix this problem.' % (key,chainfile2)
 			if key in attrs1['linpars']:
 				dis2 = numpy.sort(1.0*pdic2[key][-nvals:])
+				logs = ''
 			else:
 				dis2 = numpy.sort(numpy.log10(pdic2[key][-nvals:]))
-			table_print( key, dis2 )
+				logs = '10^'
+			table_print( dis2, logs=logs )
 
 			# Now compare the 2 chains
 			###################################
@@ -172,8 +186,9 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 			#sts = roc( dis1, dis2 )
 			#numpy.savetxt('/tmp/%s-roc' % key, sts)
 			# Compute diff of chains distribution
-			disdif = (numpy.random.choice(dis1,nvals)-numpy.random.choice(dis2,nvals))[:int(0.1*nvals)]
-			if abs(disdif.max()) < abs(disdif.min()):
+			assert ((key in attrs1['linpars']) == (key in attrs2['linpars'])), 'Error: Your 2 chains do not agree on whether param %s is linear.' % key
+			disdif = (numpy.random.choice(dis1,nvals)-numpy.random.choice(dis2,nvals))[:nvals]
+			if numpy.median(disdif) < 0.0:
 				disdif = numpy.sort( -disdif )
 			else:
 				disdif = numpy.sort( disdif )
