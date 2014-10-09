@@ -21,10 +21,10 @@
 # =============================================================================
 #
 
-import scipy.stats
 import numpy
+import scipy.stats
+import scipy.interpolate
 import phymcmc.mcmc
-import sys
 
 #
 # =============================================================================
@@ -33,19 +33,6 @@ import sys
 #
 # =============================================================================
 #
-
-def mykde( x ):
-	import scipy
-	if True:
-		return scipy.stats.gaussian_kde( x )
-	import scipy.signal
-	import scipy.interpolate
-	xmin,xmax = [x[0]/10.0, x[-1]*10.0]
-	w = len(x)**(-1.0/5.0)
-	hh,loc = scipy.histogram(x, range=(xmin,xmax), bins=len(x))
-	kernel = scipy.stats.norm.pdf((loc[1:]+loc[:-1]) * .5, 0, w)
-	yy = scipy.signal.fftconvolve( hh, kernel, 'same' )
-	return scipy.interpolate.interp1d( (loc[1:]+loc[:-1])*.5, yy, bounds_error=False, fill_value=0.0 )
 
 
 def ztest( dist ):
@@ -86,7 +73,6 @@ def roc( dis1, dis2 ):
 
 def bayes_credible_region( dist, frac=0.95 ):
 	"""Compute the mode and frac% (95%) credible region"""
-	import scipy.interpolate
 	alpha = 1.-frac
 	N = len(dist)
 	# Get the factor% (def=95%) credible region
@@ -96,7 +82,7 @@ def bayes_credible_region( dist, frac=0.95 ):
 	idx = numpy.argmin(ppf(frac+xv)-ppf(xv))
 	lb,ub = ppf([xv[idx],frac+xv[idx]])
 	# Get the mode
-	pdfkde = mykde( dist )
+	pdfkde = scipy.stats.gaussian_kde( dist )
 	mode = scipy.optimize.brute( lambda x:-pdfkde(x), [[lb, ub]] )
 	# Plot to show me you got it right
 	if False:
@@ -117,7 +103,7 @@ def bayes_diff_pvalue( dist ):
 	if qqart < 5.0e-4:
 		print('p-val bayes: < 0.001')
 		return None
-	pdfkde = mykde(dist)
+	pdfkde = scipy.stats.gaussian_kde(dist)
 	xmx = scipy.optimize.newton(lambda x:pdfkde(x)-pdfkde(0.0), 2.0*numpy.median(dist))
 	print (pdfkde(xmx), pdfkde(0.0), dist.mean())
 	assert xmx > 0.0, 'Error: xmax (%g) found < 0.0' % xmx
