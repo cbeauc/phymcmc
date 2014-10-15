@@ -122,8 +122,10 @@ def convergence( chain_file, nburn=-1, parlist=None ):
 	return [Vhat, Wredo, CSRF, UPCI]
 
 
-def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
+def triangle( parlist, rawlabels, chain_file, nburn=-1, linpars=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
+	if linpars is None:
+		linpars = chainattrs['linpars']
 	labels = rawlabels[:]
 	# Data
 	data = []
@@ -133,7 +135,7 @@ def triangle( parlist, rawlabels, chain_file, nburn=-1 ):
 	# Range for parameter (x) axis
 	extents = []
 	for i,p in enumerate(parlist):
-		if p in chainattrs['linpars']:
+		if p in linpars:
 			data.append( pardict[p] )
 		else:
 			data.append( numpy.log10( pardict[p] ) )
@@ -168,7 +170,7 @@ def choose_bins_n_weights(x, bins, linear=False):
 	return tbins, weights
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=-1 ):
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=-1, linpars=None ):
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
@@ -189,6 +191,10 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
 		pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( cf, nburn=nburn )
+		if linpars is None:
+			clinpars = chainattrs['linpars']
+		else:
+			clinpars = linpars
 		clen = min( clen, len(pdic[keys[0]]) )
 		for key in keys:
 			pardicts[key].append( pdic[key] )
@@ -208,8 +214,8 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 				x = pardicts[key][cfn]
 			normed = True
 			if isinstance(bins,int):
-				tbins, weights = choose_bins_n_weights(x, bins, linear=(key in chainattrs['linpars']))
-				if key in chainattrs['linpars']:
+				tbins, weights = choose_bins_n_weights(x, bins, linear=(key in clinpars))
+				if key in clinpars:
 					normed = True
 				else:
 					normed = False
@@ -223,7 +229,7 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		ax.set_title(labels[i])
 		ax.yaxis.set_visible(False)
 		ax.set_ylim(0, 1.1*nmax)
-		if key not in chainattrs['linpars']:
+		if key not in clinpars:
 			ax.set_xscale('log')
 	return gridfig.fig
 
