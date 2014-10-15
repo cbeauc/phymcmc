@@ -25,7 +25,9 @@
 import numpy
 import phymcmc.mcmc
 import phymcmc.plot
+import subprocess
 import sys
+import tempfile
 
 #
 # =============================================================================
@@ -100,9 +102,11 @@ def diagnostics( chain_file, savefile, parlist=None ):
 	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
 	ax.set_title(r'acceptance fraction')
 
-
 	# Saving the figure
-	gridfig.fig.savefig('%s.png'%savefile, bbox_inches='tight')
+	_,tmpfname = tempfile.mkstemp(suffix='.png')
+	gridfig.fig.savefig(tmpfname, bbox_inches='tight')
+	subprocess.call('convert %s %s.pdf'% (tmpfname,savefile), shell=True)
+	subprocess.call('rm -f %s'% tmpfname, shell=True)
 
 
 def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=False ):
