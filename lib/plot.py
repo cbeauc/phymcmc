@@ -50,14 +50,14 @@ matplotlib.rcParams.update(params)
 
 
 class grid_plot(object):
-	def __init__(self, (gridheight,gridwidth)):
+	def __init__(self, (gridheight,gridwidth), hspace=0.35, wspace=0.2):
 		import matplotlib.pyplot
 		self.gh = gridheight
 		self.gw = gridwidth
 		# Setup the figure looking nice
 		self.fig = matplotlib.pyplot.figure()
 		self.fig.set_size_inches(3*self.gw,2.8*self.gh)
-		matplotlib.pyplot.subplots_adjust(hspace=0.35, wspace=0.2)
+		matplotlib.pyplot.subplots_adjust(hspace=hspace, wspace=wspace)
 
 	def subaxes(self, idx):
 		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw))
