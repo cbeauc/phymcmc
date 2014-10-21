@@ -106,3 +106,17 @@ def perform_fit(model, params, args, verbose=True, rep_fit=3):
 	# Returns (best-fit parameters, SSR)
 	return (params, ssr)
 
+
+def mock_yield_coeff(data):
+	"""Pre-computes part of Mock-Yield SSR calculation.
+
+	argument: data a 2-column array with (time,virus)
+	returns: a tuple (arg1,arg2) from which you can compute
+	      SSR = arg1 + arg2 * clear
+	where 'clear' is your clearance rate.
+	"""
+	import math
+	td = data[:,0].mean()-data[:,0]
+	vd = numpy.log10(data[:,1]).mean()-numpy.log10(data[:,1])
+	return (vd, math.log10(math.e)*td)
+
