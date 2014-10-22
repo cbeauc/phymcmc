@@ -86,7 +86,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
 	sampler.acceptance_fraction = mcchain.attrs['acceptance_fraction']
-	sampler.acor = mcchain.attrs['acor']
+	sampler.acor = f['autocorr'].value
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = -mcchaincopy[idx:,0]
@@ -245,7 +245,11 @@ class MCSampler( object ):
 				f['mcchain'][s:s+nl,1:] = numpy.array(poss).reshape((nl,self.npars))
 				f['mcchain'].attrs['filledlength'] = s+nl
 				f['mcchain'].attrs['acceptance_fraction'] = self.acceptance_fraction
-				f['mcchain'].attrs['acor'] = self.acor
+				# If autocorr already exists, delete it before proceeding
+				if 'autocorr' in f:
+					del f['autocorr']
+				# Create the chain structure to hold the autocorr array
+				f.create_dataset('autocorr', data=numpy.array(self.acor))
 				f.close()
 				if self.verbose:
 					twrite = time.time()
@@ -267,7 +271,7 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	chainattrs = {}
 	chainattrs['parfit'] = mcchain.attrs['parfit']
 	chainattrs['acceptance_fraction'] = mcchain.attrs['acceptance_fraction']
-	chainattrs['acor'] = mcchain.attrs['acor']
+	chainattrs['acor'] = f['autocorr'].value
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
