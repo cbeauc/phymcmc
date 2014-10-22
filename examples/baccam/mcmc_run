@@ -17,6 +17,7 @@
 # =============================================================================
 
 import baccam
+import multiprocessing
 import numpy
 import phymcmc.fits
 import phymcmc.mcmc
@@ -46,7 +47,7 @@ mcpars = dict(
 	linpars = ['ssr','tI'],
 	# Arguments (args) passed to lnpostfn such that lnpostfn(pvec,par,args)
 	args = dat,
-	threads = 4
+	threads = multiprocessing.cpu_count()
 )
 
 # Setting up the MCMC sampler
