@@ -63,7 +63,7 @@ class grid_plot(object):
 		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw))
 
 
-def convergence( chain_file, nburn=-1, parlist=None ):
+def convergence( chain_file, nburn=0, parlist=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	niter = chainattrs['filledlength']
 	if parslist is None:
@@ -122,7 +122,7 @@ def convergence( chain_file, nburn=-1, parlist=None ):
 	return [Vhat, Wredo, CSRF, UPCI]
 
 
-def triangle( parlist, rawlabels, chain_file, nburn=-1, linpars=None ):
+def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	if linpars is None:
 		linpars = chainattrs['linpars']
@@ -170,7 +170,7 @@ def choose_bins_n_weights(x, bins, linear=False):
 	return tbins, weights
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=-1, linpars=None ):
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None ):
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))

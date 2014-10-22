@@ -40,7 +40,6 @@ mcpars = dict(
 	model = baccam.model,
 	nwalkers = 300,
 	nsteps = 1600,
-	nburn = 0,
 	par = params,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space

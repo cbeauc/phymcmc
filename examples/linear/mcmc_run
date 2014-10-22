@@ -49,7 +49,6 @@ mcpars = dict(
 	model = linmod.model,
 	nwalkers = 300,
 	nsteps = 400,
-	nburn = 0,
 	par = params,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space

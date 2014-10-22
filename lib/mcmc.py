@@ -71,7 +71,6 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 		model = model,
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
-		nburn = mcchain.attrs['nburn'],
 		par = params,
 		stepsize = mcchain.attrs['stepsize'],
 		linbw = mcchain.attrs['linbw'],
@@ -96,13 +95,12 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, nburn, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, verbose=True, restart_from_file=False):
+	def __init__(self, chain_file, model, nwalkers, nsteps, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, verbose=True, restart_from_file=False):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
 		self.nwalkers = nwalkers
 		self.nsteps = nsteps
-		self.nburn = nburn
 		self.par = par
 		# Optional arguments
 		self.stepsize = stepsize
@@ -196,7 +194,6 @@ class MCSampler( object ):
 		fchain.attrs['parfit'] = ['ssr']+self.par.parfit
 		fchain.attrs['nwalkers'] = self.nwalkers
 		fchain.attrs['nsteps'] = self.nsteps
-		fchain.attrs['nburn'] = self.nburn
 		fchain.attrs['stepsize'] = self.stepsize
 		fchain.attrs['linbw'] = self.linbw
 		fchain.attrs['logbw'] = self.logbw
@@ -261,7 +258,7 @@ class MCSampler( object ):
 			print('The complete MCMC run took %g h. Enjoy!' % ((time.time()-trunstart)/3600.0))
 
 
-def load_mcmc_chain( chain_file, nburn=-1 ):
+def load_mcmc_chain( chain_file, nburn=0 ):
 	f = h5py.File( chain_file, "r" )
 	mcchain = f['mcchain']
 	# Copy over only the non-zero, filled part of array
@@ -275,7 +272,6 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
-	stored_nburn = mcchain.attrs['nburn']
 	chainattrs['stepsize'] = mcchain.attrs['stepsize']
 	chainattrs['linbw'] = mcchain.attrs['linbw']
 	chainattrs['logbw'] = mcchain.attrs['logbw']
@@ -287,12 +283,9 @@ def load_mcmc_chain( chain_file, nburn=-1 ):
 		derivedchain = f['derivedchain'].value
 		derivedparlist = f['derivedchain'].attrs['parlist']
 	f.close()
-	# Use step with very best-fit + all steps post-burn
-	# 	this means that by changing nburn attribute post-mcmc run you can
-	# 	change what steps get considered without losing anything!
-	if nburn < 0: # If user did not specify nburn
-		chainattrs['nburn'] = stored_nburn
-	elif 0.0 < nburn < 1.0:
+	# nburn can be a fraction of the run rather than a number of steps
+	# default is zero burn-steps
+	if 0.0 < nburn < 1.0:
 		chainattrs['nburn'] = int(round(chainattrs['filledlength']/chainattrs['nwalkers']*nburn))
 	else:
 		chainattrs['nburn'] = nburn
