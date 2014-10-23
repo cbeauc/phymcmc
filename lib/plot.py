@@ -63,65 +63,6 @@ class grid_plot(object):
 		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw))
 
 
-def convergence( chain_file, nburn=0, parlist=None ):
-	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
-	niter = chainattrs['filledlength']
-	if parslist is None:
-		parlist = chainattrs['parfit']
-	npars = len(parlist)
-	print([npars, niter])
-
-	for key in parlist:
-		print('Error: broken function. FIXME')
-	# Construct parameter array to hasten calculations below
-	pararray = numpy.zeros((N,M))
-	for idx,key in enumerate(parlist):
-		pararray[:,i] = pardict[key]
-
-	#### Intra-chain mean and variance
-	thetam = pararray.mean(axis=0)
-	s2m = pararray.var(axis=0,ddof=1.0) # ddof=1.0 means x.sum/(N-1)
-	#### Inter-chain mean and variance
-	thetaAVG = thetam.mean()
-	Bredo = niter*thetam.var(ddof=1.0)
-	print('B parameter: %.4g' % Bredo)
-	Wredo = s2m.mean()
-	print('W parameter: %.4g' % Wredo)
-
-	Vhat =  (niter-1.0)/niter*Wredo + Bredo/niter + Bredo/(npars*niter) 
-	PSRF =  ( Vhat/Wredo )**0.5 
-	Pmod =  (  ( (niter-1.0)/niter*Wredo + Bredo/niter )/ Wredo )**0.5
-	print('Answer PSRF = %.4g ' % PSRF)
-	print('Answer PSRFm = %.4g ' % PSRF) # FIXME: print same thing twice?
-
-	################################
-	#Now advanced calc:
-
-	VarV1 = ((niter-1.0)/niter)**2 /npars* sp.tvar(s2m) 
-	VarV2 = ((npars+1.0)/(niter*npars))**2 * 2.0/(npars-1)*Bredo**2
-	VarV3 = 2.0*(npars+1.0)*(niter-1.0)/(niter**2*npars)*(niter+0.0)/npars * (np.cov(s2m, thetam**2, ddof=0)[0,1] - 2.0*thetaAVG*np.cov(s2m, thetam, ddof = 0)[0,1] )*npars/(npars-1)
-	VarVtot = VarV1 + VarV2 + VarV3
-
-	d = 2* Vhat**2/VarVtot
-	print('Vhat : %.4g' % Vhat)
-	print('Degrees of freedom : %.4g' % d)
-	Rc = ((d+3)/(d+1) * Vhat/Wredo )
-	CSRF = Rc**0.5
-	print('Estimated Point CSRF (Rc^0.5)= %.4g ' % Rc**0.5)
-
-	######Now do upper CI:
-	Bdf = npars - 1
-	Wdf = 2 *Wredo**2 / (sp.tvar(s2m)/npars)
-	R2fixed= ( niter-1.0)/niter
-	R2rand = (1.0 + 1.0/npars) * (1.0/niter) * (Bredo/Wredo)
-	R2est = R2fixed + R2rand
-	R2upper = R2fixed + sp.distributions.f.ppf(0.975, Bdf, Wdf) *R2rand
-	dfADJ  = (d+3.0)/(d+1)
-	UPCI = (dfADJ * R2upper)**0.5
-	print('Upper CI CSRF (Rc^0.5)= %.4g ' % UPCI)
-	return [Vhat, Wredo, CSRF, UPCI]
-
-
 def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	if linpars is None:
@@ -232,4 +173,3 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		if key not in clinpars:
 			ax.set_xscale('log')
 	return gridfig.fig
-
