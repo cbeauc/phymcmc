@@ -305,6 +305,24 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	return pardict, chainattrs
 
 
+def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
+	opdic,pattrs = load_mcmc_chain( chain_file )
+	pfit = pattrs['parfit']
+	idx = opdic['ssr'].argmin()
+	pdic = {}
+	for key,val in opdic.items():
+		try:
+			pdic[key] = val[idx]
+		except TypeError:
+			pdic[key] = val
+	pfit = pfit[1:]
+	if verbose:
+		print('Your best-fit was (ssr = %g)' % pdic['ssr'])
+		print(repr(pfit))
+		print(repr(pdic))
+	return (pdic,pfit)
+
+
 def add_derived_dict_to_mcmc_chain( derivedparfn, chain_file ):
 	pdic, chainattrs = load_mcmc_chain( chain_file, nburn=0 )
 	deriveddic = derivedparfn( pdic )
