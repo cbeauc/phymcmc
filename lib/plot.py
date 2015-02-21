@@ -147,10 +147,11 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		nmax = 0.0
 		for cfn in range(len(chainfiles)):
 			if len(relative):
-				if cfn == relative[cfn]:
-					x = pardicts[key][cfn]/numpy.median( pardicts[key][cfn] )
-				else:
-					x = pardicts[key][cfn][-clen:]/pardicts[key][relative[cfn]][-clen:]
+				x = pardicts[key][cfn]/numpy.median( pardicts[key][relative[cfn]] )
+				#if cfn == relative[cfn]:
+				#	x = pardicts[key][cfn]/numpy.median( pardicts[key][cfn] )
+				#else:
+				#	x = pardicts[key][cfn][-clen:]/pardicts[key][relative[cfn]][-clen:]
 			else:
 				x = pardicts[key][cfn]
 			normed = True
