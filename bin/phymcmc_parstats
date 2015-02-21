@@ -37,4 +37,4 @@ chain_file1 = sys.argv[1]
 chain_file2 = None
 if len(sys.argv) > 2:
 	chain_file2 = sys.argv[2]
-phymcmc.stats.compare_chains( chain_file1, chain_file2 )
+phymcmc.stats.print_chain_parstats( chain_file1, chain_file2 )

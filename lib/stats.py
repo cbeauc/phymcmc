@@ -35,21 +35,32 @@ import phymcmc.mcmc
 #
 
 
-def ztest( dist ):
+def ztest( dist, verbose=False ):
 	TS = numpy.mean( dist ) / numpy.std( dist )
 	pval1 = scipy.stats.norm.sf( TS )
 	pval2 = scipy.stats.norm.sf( -TS )
 	pfin = 1.0 - abs(pval1 - pval2)
-	print('p-val zed: %g (%g,%g)' % (pfin,pval1,pval2))
+	if verbose:
+		print('p-val zed: %g (%g,%g)' % (pfin,pval1,pval2))
+	return (pfin,pval1,pval2)
 
 
-def table_print( dist, logs='10^', frac=0.95 ):
+def compute_pctiles( dist, logs='10^', frac=0.95, verbose=False ):
 	rem = (1.0-frac)/2.0*100.0
 	freq_pctiles = numpy.percentile(dist, [50.0, rem, 100.0-rem])
 	bayes_pctiles = bayes_credible_region(dist, frac=frac)
-	print(' '+logs+'%g [%g--%g] CI' % tuple(freq_pctiles))
-	print(' '+logs+'%g [%g--%g] CR' % tuple(bayes_pctiles))
+	if verbose:
+		print(' '+logs+'%g [%g -- %g] CI' % tuple(freq_pctiles))
+		print(' '+logs+'%g [%g -- %g] CR' % tuple(bayes_pctiles))
 	return (bayes_pctiles, freq_pctiles)
+
+
+def compute_pvalue( dist, bayes=True, verbose=False ):
+	if bayes:
+		pval,_ = bayes_diff_pvalue( dist, verbose )
+	else:
+		pval,_,_ = ztest( dist, verbose )
+	return pval
 
 
 def roc( dis1, dis2 ):
@@ -83,7 +94,7 @@ def bayes_credible_region( dist, frac=0.95 ):
 	lb,ub = ppf([xv[idx],frac+xv[idx]])
 	# Get the mode
 	pdfkde = scipy.stats.gaussian_kde( dist )
-	mode = scipy.optimize.brute( lambda x:-pdfkde(x), [[lb, ub]] )
+	mode = scipy.optimize.brute( lambda x:-pdfkde(x), [[lb, ub]] )[0]
 	# Plot to show me you got it right
 	if False:
 		import pylab
@@ -97,15 +108,18 @@ def bayes_credible_region( dist, frac=0.95 ):
 	return ( mode, lb, ub )
 
 
-def bayes_diff_pvalue( dist ):
+def bayes_diff_pvalue( dist, verbose=False ):
 	# Get the mode
 	qqart = (dist < 0.0).mean()
 	if qqart < 5.0e-4:
-		print('p-val bayes: < 0.001')
-		return None
+		if verbose:
+			print 'p-val bayes: < 0.001'
+		return -0.001,(0,0,0)
 	pdfkde = scipy.stats.gaussian_kde(dist)
 	xmx = scipy.optimize.newton(lambda x:pdfkde(x)-pdfkde(0.0), 2.0*numpy.median(dist))
-	print (pdfkde(xmx), pdfkde(0.0), dist.mean())
+	diagnostics = (pdfkde(xmx), pdfkde(0.0), dist.mean())
+	if verbose:
+		print diagnostics
 	assert xmx > 0.0, 'Error: xmax (%g) found < 0.0' % xmx
 	pval = 1.0-pdfkde.integrate_box_1d(0.0, xmx)
 	if False:
@@ -115,10 +129,173 @@ def bayes_diff_pvalue( dist ):
 		pylab.axvline( 0.0, color='red' )
 		pylab.axvline( xmx, color='red' )
 		pylab.show()
-	print( 'p-val bayes: %g' % pval )
+	if verbose:
+		print( 'p-val bayes: %g' % pval )
+	return (pval,diagnostics)
 
 
-def compare_chains( chainfile1, chainfile2=None, parlist=None ):
+##############################################################################
+# This function determines either the
+# - mode and confidence region (CR) - bayes=True (default)
+# - median and confidence interval (CI) - bayes=False
+# and returns a dictionary where the keys are the parameters and the
+# values are tuples with (mode,lower-bound,upper-bound).
+def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 ):
+
+	# Check if you've got one or more chains
+	if isinstance(chainfiles, str):
+		chainfiles = [chainfiles]
+
+	pardics = []
+	# Now evaluate each chain individually
+	for chainfile in chainfiles:
+		pdic,attrs = phymcmc.mcmc.load_mcmc_chain(chainfile,nburn)
+
+		# Establish a parlist
+		if parlist is None:
+			parlist = list(attrs['parfit'])
+			for key,value in pdic.items():
+				try:
+					len(value)
+				except TypeError:
+					continue
+				if key not in parlist:
+					parlist.append( key )
+		if linpars is None:
+			linpars = attrs['linpars']
+
+		# Establish mode/median and CR/CI
+		pardic = dict()
+		pardic['linpars'] = linpars
+		for key in parlist:
+			# Sort dist and use log if appropriate
+			dis = numpy.sort(1.0*pdic[key])
+			if key not in linpars:
+				dis = numpy.log10(dis)
+			# Simple report on individual chain (no comparison)
+			pardic[key] = compute_pctiles(dis)[not bayes]
+		pardics.append(pardic.copy())
+
+	# Now return dict or list of dicts
+	if len(pardics) == 1:
+		return pardics[0]
+	else:
+		return pardics
+
+
+##############################################################################
+# This function compares a list of chains, pairwise, and returns
+# a dictionary where the keys are the parameters and the
+# values are lists of the p-values for each pairwise comparison.
+def chains_compare( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 ):
+
+	# Do the combinatorics for pairwise-comparison
+	nchains = len(chainfiles)
+	pvaldic = dict()
+	if parlist is not None:
+		for key in parlist:
+			pvaldic[key] = []
+	for id1 in range(nchains-1):
+		pdic1, attrs1 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id1], nburn=0)
+
+		# Build parlist if None
+		if parlist is None:
+			parlist = []
+			for key,value in pdic1.items():
+				try:
+					len(value)
+				except TypeError:
+					continue
+				if key not in parlist:
+					parlist.append( key )
+					pvaldic[key] = []
+
+		if linpars is None:
+			linpars = attrs1['linpars']
+
+		# Now let's look at that second chain
+		for id2 in range(id1+1,nchains):
+			pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id2], nburn=0)
+			nvals = min(len(pdic1['ssr']), len(pdic2['ssr']))
+
+			# Compute p-value for each key
+			for key in parlist:
+				if key in linpars:
+					dis1 = 1.0*pdic1[key]
+					dis2 = 1.0*pdic2[key]
+				else:
+					dis1 = numpy.log10(pdic1[key])
+					dis2 = numpy.log10(pdic2[key])
+				disdif = numpy.random.choice(dis1,nvals)-numpy.random.choice(dis2,nvals)
+				if numpy.median(disdif) < 0.0:
+					disdif = numpy.sort( -disdif )
+				else:
+					disdif = numpy.sort( disdif )
+				# Compute p-value (to compare signif of difference)
+				pval = compute_pvalue(disdif,bayes=bayes)
+				pvaldic[key].append(pval)
+	return pvaldic
+
+
+def table_params( dic, parlist=None ):
+
+	linpars = dic[0]['linpars']
+	if parlist is None:
+		parlist = dic[0].keys()
+		parlist.remove('linpars')
+
+	# Make table header
+	table = '\hspace{-7em}%%\n\\begin{tabular}{'
+	table += 'c' * (len(parlist)+1) + '}\n\n'
+	table += repr(parlist).replace('\'','').replace(',',' &').replace('[','strain & ').replace(']',' \\\\\n')
+	# Make table: row=strain, col=param
+	for strain in range(len(dic)):
+		table += '%d ' % strain
+		for key in parlist:
+			if key in linpars:
+				table += '& $%.3g\\ [%.2g,%.2g]$ ' % dic[strain][key]
+			else:
+				table += '& $10^{%.3g\\ [%.2g,%.2g]}$ ' % dic[strain][key]
+		table += '\\\\\n' # new line, new strain
+	# Make table footer
+	table += '\\end{tabular}\n'
+	return table
+
+
+def table_compare( dic, labels=None, parlist=None ):
+	import itertools
+
+	if parlist is None:
+		parlist = dic.keys()
+
+	if labels is None:
+		N = 1; dN = 2
+		while N+1 < len(dic[parlist[0]]):
+			N += dN; dN += 1
+		labels = range(dN)
+
+	# Make table header
+	table = '\hspace{-7em}%%\n\\begin{tabular}{'
+	table += 'c' * (len(parlist)+1) + '}\n\n'
+	table += repr(parlist).replace('\'','').replace(',',' &').replace('[','compare & ').replace(']',' \\\\\n')
+	# Make table: row=strain, col=param
+	for idx,label in enumerate(itertools.combinations(labels,2)):
+		table += '%s:%s ' % label
+		for key in parlist:
+			pval = dic[key][idx]
+			if pval < 0.0:
+				table += '& \\textbf{< 0.001} '
+			elif pval < 0.05:
+				table += '& \\textbf{%.3f} ' % pval
+			else:
+				table += '& %.3f ' % pval
+		table += '\\\\\n' # new line, new strain-pair
+	# Make table footer
+	table += '\\end{tabular}\n'
+	return table
+
+
+def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 	import time
 	tstart = time.time()
 	# FIXME: nburn?
@@ -152,7 +329,7 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 			print('%s [log10 distributed]' % key)
 			logs='10^'
 		# Simple report on individual chains (no comparison)
-		table_print( dis1, logs=logs )
+		compute_pctiles( dis1, logs=logs, verbose=True )
 
 		if chainfile2:
 			# Check in case parlist is not be same for both chains...
@@ -163,7 +340,7 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 			else:
 				dis2 = numpy.sort(numpy.log10(pdic2[key][-nvals:]))
 				logs = '10^'
-			table_print( dis2, logs=logs )
+			compute_pctiles( dis2, logs=logs, verbose=True )
 
 			# Now compare the 2 chains
 			###################################
@@ -178,8 +355,8 @@ def compare_chains( chainfile1, chainfile2=None, parlist=None ):
 			else:
 				disdif = numpy.sort( disdif )
 			# Compute p-value (to compare signif of difference)
-			ztest( disdif )
-			bayes_diff_pvalue( disdif )
+			ztest( disdif, verbose=True )
+			bayes_diff_pvalue( disdif, verbose=True )
 		print('')
 	print( 'Time taken: %g s' % (time.time()-tstart) )
 
