@@ -173,4 +173,4 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		ax.set_ylim(0, 1.1*nmax)
 		if key not in clinpars:
 			ax.set_xscale('log')
-	return gridfig.fig
+	return gridfig
