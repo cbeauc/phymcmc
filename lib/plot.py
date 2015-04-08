@@ -100,8 +100,8 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
 def choose_bins_n_weights(x, bins, linear=False):
 	whm = numpy.percentile(x,[15.87,50,84.13])
 	if linear:
-		#tbins = numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],bins)
-		tbins = numpy.linspace(3.0*whm[0]-2.0*whm[1],4.0*whm[1]-3.0*whm[0],bins)
+		tbins = numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],bins)
+		#tbins = numpy.linspace(3.0*whm[0]-2.0*whm[1],4.0*whm[1]-3.0*whm[0],bins)
 		weights = None
 	else:
 		whm = numpy.log10(whm)
