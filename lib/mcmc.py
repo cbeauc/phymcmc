@@ -306,7 +306,7 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 
 
 def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
-	opdic,pattrs = load_mcmc_chain( chain_file )
+	opdic,pattrs = load_mcmc_chain( chain_file, nburn=nburn )
 	pfit = pattrs['parfit']
 	idx = opdic['ssr'].argmin()
 	pdic = {}
