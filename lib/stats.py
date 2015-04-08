@@ -109,29 +109,10 @@ def bayes_credible_region( dist, frac=0.95 ):
 
 
 def bayes_diff_pvalue( dist, verbose=False ):
-	# Get the mode
-	qqart = (dist < 0.0).mean()
-	if qqart < 5.0e-4:
-		if verbose:
-			print 'p-val bayes: < 0.001'
-		return -0.001,(0,0,0)
-	pdfkde = scipy.stats.gaussian_kde(dist)
-	xmx = scipy.optimize.newton(lambda x:pdfkde(x)-pdfkde(0.0), 2.0*numpy.median(dist))
-	diagnostics = (pdfkde(xmx), pdfkde(0.0), dist.mean())
-	if verbose:
-		print diagnostics
-	assert xmx > 0.0, 'Error: xmax (%g) found < 0.0' % xmx
-	pval = 1.0-pdfkde.integrate_box_1d(0.0, xmx)
-	if False:
-		import pylab
-		xrng = numpy.linspace( dist[0], dist[-1], 200 )
-		pylab.plot( xrng, pdfkde(xrng), 'k-' )
-		pylab.axvline( 0.0, color='red' )
-		pylab.axvline( xmx, color='red' )
-		pylab.show()
+	pval = (dist < 0.0).mean()
 	if verbose:
 		print( 'p-val bayes: %g' % pval )
-	return (pval,diagnostics)
+	return pval
 
 
 ##############################################################################
