@@ -322,11 +322,11 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 
 		# Copy dist and use log if appropriate
 		if key in attrs1['linpars']:
-			dis1 = 1.0*pdic1[key][-nvals:]
+			dis1 = 1.0*pdic1[key]
 			logs=''
 			print('%s' % key)
 		else:
-			dis1 = numpy.log10(pdic1[key][-nvals:])
+			dis1 = numpy.log10(pdic1[key])
 			print('%s [log10 distributed]' % key)
 			logs='10^'
 		# Simple report on individual chains (no comparison)
@@ -337,10 +337,10 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 			# Check in case parlist is not be same for both chains...
 			assert len(pdic2[key]), 'Error: key %s not in chain %s. Use parlist optional argument to fix this problem.' % (key,chainfile2)
 			if key in attrs1['linpars']:
-				dis2 = 1.0*pdic2[key][-nvals:]
+				dis2 = 1.0*pdic2[key]
 				logs = ''
 			else:
-				dis2 = numpy.log10(pdic2[key][-nvals:])
+				dis2 = numpy.log10(pdic2[key])
 				logs = '10^'
 			compute_pctiles( dis2, logs=logs, bayes=False, verbose=True )
 			compute_pctiles( dis2, logs=logs, bayes=True, verbose=True )
@@ -352,7 +352,7 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 			#numpy.savetxt('/tmp/%s-roc' % key, sts)
 			# Compute diff of chains distribution
 			assert ((key in attrs1['linpars']) == (key in attrs2['linpars'])), 'Error: Your 2 chains do not agree on whether param %s is linear.' % key
-			disdif = (numpy.random.choice(dis1,nvals)-numpy.random.choice(dis2,nvals))[:nvals]
+			disdif = numpy.random.choice(dis1,5*nvals)-numpy.random.choice(dis2,5*nvals)
 			# Compute p-value (to compare signif of difference)
 			one_tailed_pvalue( disdif, verbose=True )
 			bayes_diff_pvalue( disdif, verbose=True )
