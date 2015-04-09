@@ -36,7 +36,10 @@ import phymcmc.mcmc
 
 
 def one_tailed_pvalue( dist, verbose=False ):
-	TS = numpy.mean( dist ) / numpy.std( dist )
+	if numpy.median(dist) < 0.0:
+		TS = numpy.mean( -dist ) / numpy.std( -dist )
+	else:
+		TS = numpy.mean( dist ) / numpy.std( dist )
 	pval = scipy.stats.norm.cdf( -TS )
 	if verbose:
 		print('p-val zed: %g' % pval)
@@ -88,6 +91,7 @@ def roc( dis1, dis2 ):
 
 def bayes_credible_region( dist, logs='10^', frac=0.95, verbose=False ):
 	"""Compute the mode and frac% (95%) credible region"""
+	dist = numpy.sort( dist )
 	alpha = 1.-frac
 	N = len(dist)
 	# Get the factor% (def=95%) credible region
@@ -116,7 +120,10 @@ def bayes_credible_region( dist, logs='10^', frac=0.95, verbose=False ):
 
 
 def bayes_diff_pvalue( dist, verbose=False ):
-	pval = (dist < 0.0).mean()
+	if numpy.median(dist) < 0.0:
+		pval = (dist > 0.0).mean()
+	else:
+		pval = (dist < 0.0).mean()
 	if verbose:
 		print( 'p-val bayes: %g' % pval )
 	return pval
@@ -156,8 +163,8 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 )
 		pardic = dict()
 		pardic['linpars'] = linpars
 		for key in parlist:
-			# Sort dist and use log if appropriate
-			dis = numpy.sort(1.0*pdic[key])
+			# Copy distribution and use log if appropriate
+			dis = 1.0*pdic[key]
 			if key not in linpars:
 				dis = numpy.log10(dis)
 			# Simple report on individual chain (no comparison)
@@ -313,13 +320,13 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 
 	for key in parlist:
 
-		# Sort dist and use log if appropriate
+		# Copy dist and use log if appropriate
 		if key in attrs1['linpars']:
-			dis1 = numpy.sort(1.0*pdic1[key][-nvals:])
+			dis1 = 1.0*pdic1[key][-nvals:]
 			logs=''
 			print('%s' % key)
 		else:
-			dis1 = numpy.sort(numpy.log10(pdic1[key][-nvals:]))
+			dis1 = numpy.log10(pdic1[key][-nvals:])
 			print('%s [log10 distributed]' % key)
 			logs='10^'
 		# Simple report on individual chains (no comparison)
@@ -330,10 +337,10 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 			# Check in case parlist is not be same for both chains...
 			assert len(pdic2[key]), 'Error: key %s not in chain %s. Use parlist optional argument to fix this problem.' % (key,chainfile2)
 			if key in attrs1['linpars']:
-				dis2 = numpy.sort(1.0*pdic2[key][-nvals:])
+				dis2 = 1.0*pdic2[key][-nvals:]
 				logs = ''
 			else:
-				dis2 = numpy.sort(numpy.log10(pdic2[key][-nvals:]))
+				dis2 = numpy.log10(pdic2[key][-nvals:])
 				logs = '10^'
 			compute_pctiles( dis2, logs=logs, bayes=False, verbose=True )
 			compute_pctiles( dis2, logs=logs, bayes=True, verbose=True )
@@ -346,10 +353,6 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 			# Compute diff of chains distribution
 			assert ((key in attrs1['linpars']) == (key in attrs2['linpars'])), 'Error: Your 2 chains do not agree on whether param %s is linear.' % key
 			disdif = (numpy.random.choice(dis1,nvals)-numpy.random.choice(dis2,nvals))[:nvals]
-			if numpy.median(disdif) < 0.0:
-				disdif = numpy.sort( -disdif )
-			else:
-				disdif = numpy.sort( disdif )
 			# Compute p-value (to compare signif of difference)
 			one_tailed_pvalue( disdif, verbose=True )
 			bayes_diff_pvalue( disdif, verbose=True )
