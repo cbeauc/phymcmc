@@ -161,7 +161,7 @@ class MCSampler( object ):
 				# accept or reject the candidate position
 				lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
 				if not math.isinf( lprob ):
-					if (self.maxssr == 1.0e20) or (-lnprob < self.maxssr):
+					if (self.maxssr == 1.0e20) or (-lprob < self.maxssr):
 						self.curlnprob[wrem] = lprob
 						self.curpos[wrem,:] = pcandidate
 						if self.verbose:
