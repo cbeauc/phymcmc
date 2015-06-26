@@ -95,7 +95,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, verbose=True, restart_from_file=False):
+	def __init__(self, chain_file, model, nwalkers, nsteps, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, maxssr=1.0e20, verbose=True, restart_from_file=False):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
@@ -110,6 +110,7 @@ class MCSampler( object ):
 		self.args = args if args is not None else ()
 		self.threads = threads
 		self.pool = pool
+		self.maxssr = maxssr
 		self.verbose = verbose
 
 		# Additional parameters/properties of sampler
@@ -160,12 +161,13 @@ class MCSampler( object ):
 				# accept or reject the candidate position
 				lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
 				if not math.isinf( lprob ):
-					self.curlnprob[wrem] = lprob
-					self.curpos[wrem,:] = pcandidate
-					if self.verbose:
-						print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
-						print( ('%g '*self.npars) % tuple(pcandidate) )
-					wrem -= 1
+					if (self.maxssr == 1.0e20) or (-lnprob < self.maxssr):
+						self.curlnprob[wrem] = lprob
+						self.curpos[wrem,:] = pcandidate
+						if self.verbose:
+							print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
+							print( ('%g '*self.npars) % tuple(pcandidate) )
+						wrem -= 1
 		else:
 			if self.verbose:
 				print('Reading walkers initial pos from end of %s'% oldchainfile)
