@@ -47,15 +47,15 @@ class ParamStruct(object):
 			self.pardict[key] = val
 
 
-def rcost(pvec, model, params, args):
-	return numpy.ones(pvec.shape)*scost(pvec, model, params, args)
+def rcost(pvec, model, params, maxssr, args):
+	return numpy.ones(pvec.shape)*scost(pvec, model, params, maxssr, args)
 
-def scost(pvec, model, params, args):
+def scost(pvec, model, params, maxssr, args):
 	pvec = 10.0**pvec
 	try:
 		tmp = model(pvec,params)
 	except ValueError: # Problem with parameters
-		return PosInf
+		return maxssr
 	#print( params.pardict )
 	try:
 		ssr = tmp.get_ssr(args)
@@ -63,10 +63,10 @@ def scost(pvec, model, params, args):
 		return ssr
 	except: # Unknown/unforeseen problem
 		print('WARNING: Your code believes the parameters are valid but the call to get_ssr failed. Figure out why and fix this problem.')
-		return PosInf
+		return maxssr
 
 
-def perform_fit(model, params, args, verbose=True, rep_fit=3):
+def perform_fit(model, params, args, verbose=True, maxssr=PosInf, rep_fit=3):
 	if verbose:
 		print(params.parfit)
 		print(params.vector)
@@ -74,12 +74,12 @@ def perform_fit(model, params, args, verbose=True, rep_fit=3):
 	# It's best to fit parameters in log space
 	pvec = numpy.log10(params.vector)
 	if verbose:
-		ssr = scost(pvec, model, params, args)
+		ssr = scost(pvec, model, params, maxssr, args)
 		print( 'Starting ssr = %g\n' % ssr )
 
 	# Do rep_fit fits w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
 	for rep in range(rep_fit):
-		lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,args), maxfev=7200, full_output=True)[0:3]
+		lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,maxssr,args), maxfev=7200, full_output=True)[0:3]
 		pvec = lsout[0]
 		params.vector = 10.0**pvec
 		ssr = lsout[2]['fvec'][0]
@@ -88,14 +88,14 @@ def perform_fit(model, params, args, verbose=True, rep_fit=3):
 			print( params.pardict )
 
 	# One long but more accurate fit using the Nelder-Mead downhill simplex
-	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,params,args), full_output=True, disp=False)[0:2]
+	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,params,maxssr,args), full_output=True, disp=False)[0:2]
 	params.vector = 10.0**pvec
 	if verbose:
 		print( 'Nelder-Mead (ssr = %g)' % ssr )
 		print( params.pardict )
 
 	# One last fit w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
-	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,args), maxfev=7200, full_output=True)
+	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,maxssr,args), maxfev=7200, full_output=True)
 	pvec = lsout[0]
 	params.vector = 10.0**pvec
 	ssr = lsout[2]['fvec'][0]
