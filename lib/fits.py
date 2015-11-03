@@ -47,6 +47,10 @@ class ParamStruct(object):
 			self.pardict[key] = val
 
 
+def ssrify( modeldata, expdata ):
+	""" Computes the sum-of-squared of the log10 of the residuals. """
+	return numpy.sum( numpy.log10( modeldata/expdata ) )
+
 def rcost(pvec, model, params, maxssr, args):
 	return numpy.ones(pvec.shape)*scost(pvec, model, params, maxssr, args)
 
