@@ -49,7 +49,7 @@ class ParamStruct(object):
 
 def ssrify( modeldata, expdata ):
 	""" Computes the sum-of-squared of the log10 of the residuals. """
-	return numpy.sum( numpy.log10( modeldata/expdata ) )
+	return numpy.sum( numpy.log10( modeldata/expdata )**2.0 )
 
 def rcost(pvec, model, params, maxssr, args):
 	return numpy.ones(pvec.shape)*scost(pvec, model, params, maxssr, args)
