@@ -56,9 +56,9 @@ def freq_confidence_interval( dist, logs='10^', frac=0.95, verbose=False ):
 
 def compute_pctiles( dist, logs='10^', frac=0.95, bayes=True, verbose=False ):
 	if bayes:
-		return freq_confidence_interval(dist, logs=logs, frac=frac, verbose=verbose)
-	else:
 		return bayes_credible_region(dist, logs=logs, frac=frac, verbose=verbose)
+	else:
+		return freq_confidence_interval(dist, logs=logs, frac=frac, verbose=verbose)
 
 
 def compute_pvalue( dist, bayes=True, verbose=False ):
