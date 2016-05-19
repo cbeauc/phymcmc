@@ -26,6 +26,7 @@ import numpy
 import phymcmc.mcmc
 ### plotting STUFF
 import matplotlib
+from mpl_toolkits.mplot3d import Axes3D
 matplotlib.use('Agg')
 params = {
 	'xtick.labelsize': 14,
@@ -59,8 +60,8 @@ class grid_plot(object):
 		self.fig.set_size_inches(rwidth*self.gw,rheight*self.gh)
 		matplotlib.pyplot.subplots_adjust(hspace=hspace, wspace=wspace)
 
-	def subaxes(self, idx):
-		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw))
+	def subaxes(self, idx, *args, **kwargs):
+		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw), *args, **kwargs)
 
 
 def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
