@@ -189,5 +189,5 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=F
 #
 
 chainfile = sys.argv[1]
-savefile = sys.argv[2]
+savefile = sys.argv[2].split('.pdf')[0]
 diagnostics( chainfile, savefile )
