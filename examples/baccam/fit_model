@@ -36,7 +36,7 @@ pdic = dict(
 	V0 = datV[0]
 )
 pfit = ['p','c','b','V0']
-params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
+params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
 # Fit model to data
 params,bfssr = phymcmc.fits.perform_fit(baccam.model,params,dat)

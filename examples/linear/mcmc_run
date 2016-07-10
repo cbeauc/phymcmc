@@ -24,7 +24,6 @@
 
 import linmod
 import numpy
-import phymcmc.fits
 import phymcmc.mcmc
 
 #
@@ -41,7 +40,7 @@ dat = numpy.loadtxt("lin.dat")
 # 	should normally be the output of a best-fit to start in good place
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
-params = phymcmc.fits.ParamStruct(pdic.copy(),pfit)
+params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
 # MCMC parameters
 mcpars = dict(

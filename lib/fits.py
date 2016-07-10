@@ -34,19 +34,6 @@ PosInf = float('+inf')
 #
 
 
-class ParamStruct(object):
-	def __init__(self,pardict,parfit):
-		self.pardict = pardict
-		self.parfit = parfit
-	@property
-	def vector(self):
-		return tuple(self.pardict[key] for key in self.parfit)
-	@vector.setter
-	def vector(self,fittedpars):
-		for key,val in zip(self.parfit,fittedpars):
-			self.pardict[key] = val
-
-
 def ssrify( modeldata, expdata ):
 	""" Computes the sum-of-squared of the log10 of the residuals. """
 	return numpy.sum( numpy.log10( modeldata/expdata )**2.0 )
