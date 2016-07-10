@@ -36,7 +36,7 @@ params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
 # MCMC parameters
 mcpars = dict(
-	chain_file = 'outputs/chain_keep1600.hdf5',
+	chain_file = 'chain_keep1600.hdf5',
 	model = baccam.model,
 	nwalkers = 300,
 	nsteps = 1600,
@@ -52,7 +52,7 @@ mcpars = dict(
 
 # Re-setting up the MCMC sampler
 mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
-mcsampler.initialize_the_walkers(oldchainfile='outputs/chain_burn1000.hdf5')
+mcsampler.initialize_the_walkers(oldchainfile='chain_burn1000.hdf5')
 mcsampler.initialize_the_chainfile()
 # Performing the MCMC run
 mcsampler.run_mcmc()

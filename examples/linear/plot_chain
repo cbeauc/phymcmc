@@ -33,7 +33,7 @@ import phymcmc.plot
 # =============================================================================
 #
 
-chainfile = os.path.abspath('outputs/chain_lin.hdf5')
+chainfile = os.path.abspath('chain_lin.hdf5')
 
 labeldic = {
 	'ssr': r'Sum squared resid, SSR',
@@ -48,7 +48,7 @@ if True:
 	plotpars = allpars[:-1]
 	plotlabels = plotpars
 	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
-	fig.savefig('outputs/triangle_lin.png', bbox_inches='tight')
+	fig.savefig('triangle_lin.png', bbox_inches='tight')
 
 # Making histogram grid of all params
 if True:
@@ -56,5 +56,5 @@ if True:
 	plotpars = allpars
 	plotlabels = [labeldic[key] for key in plotpars]
 	fig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
-	fig.savefig('outputs/hists_lin.pdf', bbox_inches='tight')
+	fig.savefig('hists_lin.pdf', bbox_inches='tight')
 

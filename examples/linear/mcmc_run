@@ -44,7 +44,7 @@ params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
 # MCMC parameters
 mcpars = dict(
-	chain_file = 'outputs/chain_lin.hdf5',
+	chain_file = 'chain_lin.hdf5',
 	model = linmod.model,
 	nwalkers = 300,
 	nsteps = 400,
