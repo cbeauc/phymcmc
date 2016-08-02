@@ -144,8 +144,9 @@ class MCSampler( object ):
 			# walker 0 gets started at the best fit position (centre)
 			self.curpos[0,:] = self.par.vector
 			self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
-			print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
-			print( ('%g '*self.npars) % tuple(self.par.vector) )
+			if self.verbose:
+				print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
+				print( ('%g '*self.npars) % tuple(self.par.vector) )
 
 			# the remaining walkers are distributed randomly, uniformly (lin or log)
 			wrem = self.nwalkers-1
