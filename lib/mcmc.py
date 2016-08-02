@@ -168,6 +168,7 @@ class MCSampler( object ):
 						if self.verbose:
 							print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
 							print( ('%g '*self.npars) % tuple(pcandidate) )
+							sys.stdout.flush()
 						wrem -= 1
 		else:
 			if self.verbose:
