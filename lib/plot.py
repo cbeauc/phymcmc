@@ -170,7 +170,6 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 			nmax = max(numpy.max(n),nmax)
 
 		ax.set_title(labels[i])
-		ax.yaxis.set_visible(False)
 		ax.set_ylim(0, 1.1*nmax)
 		if key not in clinpars:
 			ax.set_xscale('log')
