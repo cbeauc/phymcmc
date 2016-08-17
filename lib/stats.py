@@ -171,11 +171,8 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 )
 			pardic[key] = compute_pctiles(dis,bayes)
 		pardics.append(pardic.copy())
 
-	# Now return dict or list of dicts
-	if len(pardics) == 1:
-		return pardics[0]
-	else:
-		return pardics
+	# Now return list of dicts
+	return pardics
 
 
 ##############################################################################
@@ -229,9 +226,11 @@ def chains_compare( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 
 	return pvaldic
 
 
-def table_params( dic, parlist=None, parlabels=None ):
+def table_params( dic, parlist=None, parlabels=None, linpars=None ):
 
-	linpars = dic[0]['linpars']
+	analysis_linpars = dic[0]['linpars']
+	if linpars is None:
+		linpars = analysis_linpars
 	if parlist is None:
 		parlist = dic[0].keys()
 		parlist.remove('linpars')
@@ -248,8 +247,10 @@ def table_params( dic, parlist=None, parlabels=None ):
 	for key,label in zip(parlist,parlabels):
 		table += '%s ' % label
 		for strain in range(nstrains):
-			if key in linpars:
+			if key in analysis_linpars:
 				table += '& $%.3g\\ [%.2g,%.2g]$ ' % dic[strain][key]
+			elif key in linpars:
+				table += '& $%.3g\\ [%.2g,%.2g]$ ' % tuple([10.0**i for i in dic[strain][key]])
 			else:
 				table += '& $10^{%.3g\\ [%.2g,%.2g]}$ ' % dic[strain][key]
 		table += '\\\\\n' # new line, new param
