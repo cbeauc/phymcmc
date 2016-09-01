@@ -294,6 +294,9 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	else:
 		chainattrs['nburn'] = nburn
 	idx = numpy.arange(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
+	# Slice trhough the two array attributes based on nburn
+	chainattrs['acceptance_fraction'] = chainattrs['acceptance_fraction'][nburn:]
+	chainattrs['acor'] = chainattrs['acor'][nburn:,:]
 	min_ssr_row = mcchaincopy[:chainattrs['filledlength'],0].argmin()
 	if min_ssr_row not in idx:
 		print('WARNING: Your best SSR was discarded when the burn-in was applied.')
