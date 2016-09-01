@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+#!/usr/bin/python
+# Copyright (C) 2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -73,9 +73,9 @@ def brooksgelman( par ):
 	return bgstats
 
 
-def diagnostics( chain_file, savefile, parlist=None ):
+def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
 	# Get the chain first
-	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=0)
+	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=nburn)
 
 	# Construct parlist from chain if none provided
 	if parlist is None:
@@ -188,6 +188,15 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=F
 # =============================================================================
 #
 
-chainfile = sys.argv[1]
-savefile = sys.argv[2].split('.pdf')[0]
-diagnostics( chainfile, savefile )
+nburn = 0
+bid = 1
+if sys.argv[bid][:2] == '-n':
+	if len(sys.argv[bid]) > 2:
+		nburn = int(float(sys.argv[bid][2:]))
+		bid += 1
+	else:
+		nburn = int(float(sys.argv[bid+1][2:]))
+		bid += 2
+chainfile = sys.argv[bid]
+savefile = sys.argv[bid+1].split('.pdf')[0]
+diagnostics( chainfile, savefile, nburn=nburn )
