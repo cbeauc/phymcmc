@@ -175,6 +175,8 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 				#	x = pardicts[key][cfn][-clen:]/pardicts[key][relative[cfn]][-clen:]
 			else:
 				x = pardicts[key][cfn]
+			if type(x) is float: # if x is not an array, don't plot
+				continue
 			n = hist(ax, x, bins=bins, linear=(key in clinpars), density=True, weights=weights, color=colors[cfn])
 			nmax = max(n,nmax)
 
