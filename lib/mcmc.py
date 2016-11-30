@@ -286,6 +286,7 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	if 'derivedchain' in f:
 		derivedchain = f['derivedchain'].value
 		derivedparlist = f['derivedchain'].attrs['parlist']
+		pardict.update( eval(f['derivedchain'].attrs['pardict']) )
 	f.close()
 	# nburn can be a fraction of the run rather than a number of steps
 	# default is zero burn-steps
@@ -294,7 +295,7 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	else:
 		chainattrs['nburn'] = nburn
 	idx = numpy.arange(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
-	# Slice trhough the two array attributes based on nburn
+	# Slice through the two array attributes based on nburn
 	chainattrs['acceptance_fraction'] = chainattrs['acceptance_fraction'][nburn:]
 	chainattrs['acor'] = chainattrs['acor'][nburn:,:]
 	min_ssr_row = mcchaincopy[:chainattrs['filledlength'],0].argmin()
@@ -331,16 +332,29 @@ def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 
 
 def add_derived_dict_to_mcmc_chain( derivedparfn, chain_file ):
+	# load the current chain
 	pdic, chainattrs = load_mcmc_chain( chain_file, nburn=0 )
+	# compute and obtain the derived dictionary
 	deriveddic = derivedparfn( pdic )
-	derivedlist = deriveddic.keys()
-	derivedarray = numpy.array(deriveddic.values()).T
+	# put the resulting dictionary in mcmc-hdf5 friendly format
+	derivedpardict = dict() # 1st row values of all derived params
+	derivedparlist = [] # derived params that are arrays
+	derivedarray = [] # array of derived params that are arrays
+	for key,value in deriveddic.items():
+		if type(value) is float:
+			derivedpardict[key] = value
+		else:
+			derivedpardict[key] = value[0]
+			derivedparlist.append( key )
+			derivedarray.append( value )
+	derivedarray = numpy.array(derivedarray).T
 	f = h5py.File(chain_file, 'r+')
 	# If a derivedchain already exists, delete it before proceeding
 	if 'derivedchain' in f:
 		del f['derivedchain']
 	# Create the chain structure to hold the derived chain array
 	fderivedchain = f.create_dataset('derivedchain', data=derivedarray)
-	f['derivedchain'].attrs['parlist'] = derivedlist
+	f['derivedchain'].attrs['parlist'] = derivedparlist
+	f['derivedchain'].attrs['pardict'] = repr(derivedpardict)
 	f.close()
 

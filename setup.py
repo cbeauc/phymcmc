@@ -14,7 +14,8 @@ setup(
 	],
 	scripts = [
 		'bin/phymcmc_diagnostics',
-		'bin/phymcmc_parstats'
+		'bin/phymcmc_parstats',
+		'bin/phymcmc_rmderived'
 	],
 	package_dir = {'phymcmc':'lib'}
 )
