@@ -148,8 +148,8 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 	gridfig = grid_plot((gh,gw))
 
 	# Load the parameters of each chain file
-	pardicts = {key: [] for key in keys}
-	bestfits = {key: [] for key in keys}
+	pardicts = dict((key, []) for key in keys)
+	bestfits = dict((key, []) for key in keys)
 	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
 		pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( cf, nburn=nburn )

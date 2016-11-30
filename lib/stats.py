@@ -235,7 +235,7 @@ def table_params( dic, parlist=None, parlabels=None, linpars=None ):
 		parlist = dic[0].keys()
 		parlist.remove('linpars')
 	if parlabels is None:
-		parlabels = {key:key for key in parlist}
+		parlabels = dict((key, key) for key in parlist)
 
 	# Make table header
 	nstrains = len(dic)
@@ -265,7 +265,7 @@ def table_compare( dic, labels=None, parlist=None, parlabels=None ):
 	if parlist is None:
 		parlist = dic.keys()
 	if parlabels is None:
-		parlabels = {key:key for key in parlist}
+		parlabels = dict((key, key) for key in parlist)
 
 	if labels is None:
 		N = 1; dN = 2
