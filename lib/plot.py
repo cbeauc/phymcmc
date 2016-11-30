@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,7 +64,7 @@ class grid_plot(object):
 		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw), *args, **kwargs)
 
 
-def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
+def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
 	if linpars is None:
 		linpars = chainattrs['linpars']
@@ -85,7 +85,7 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
 		truths.append( data[-1][iminssr] )
 	data = numpy.vstack( data ).T
 	from .emcee import corner as dfmtriangle
-	fig = dfmtriangle.corner(data, labels=labels, truths=truths) 
+	fig = dfmtriangle.corner(data, labels=labels, truths=truths, weights=weights)
 	# Now add a histogram for SSR
 	x = pardict['ssr']
 	ax = fig.axes[len(parlist)-2]
@@ -98,21 +98,41 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None ):
 	return fig
 
 
-def choose_bins_n_weights(x, bins, linear=False):
+def choose_bins(x, nbins, linear=False):
+	# FIXME: percentile will change based on weights but not accouted for!!!
 	whm = numpy.percentile(x,[15.87,50,84.13])
+	# The secret to beautiful histograms
 	if linear:
-		tbins = numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],bins)
-		#tbins = numpy.linspace(3.0*whm[0]-2.0*whm[1],4.0*whm[1]-3.0*whm[0],bins)
-		weights = None
+		return numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],nbins)
+	return numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
+
+
+def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
+	if not linear:
+		x = numpy.log10(x)
+	# Select the binning
+	if isinstance(bins,int):
+		tbins = choose_bins( x, bins, linear=linear )
 	else:
-		whm = numpy.log10(whm)
-		#tbins = numpy.logspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],bins)
-		tbins = numpy.logspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],bins)
-		weights = numpy.ones_like(x)/len(x)/math.log10(tbins[1]/tbins[0])
-	return tbins, weights
+		tbins = bins
+	# Distribute data into the bins
+	n,b = numpy.histogram( x, tbins, weights=weights )
+	if density:
+		n = n * 1.0 / numpy.sum(n) / numpy.diff(b)
+	if not linear:
+		b = 10.0**b
+	# Now we're ready to make a beautiful histogram
+	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
+	facecol = tuple( facecol + [0.2] ) # Add alpha for face
+	b = numpy.hstack(zip(b,b))
+	n = numpy.hstack([0.0]+zip(n,n)+[0.0])
+	ax.fill( b, n, facecolor=facecol, edgecolor=color, linewidth=2.0 )
+	if not linear:
+		ax.set_xscale('log')
+	return n.max()
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None ):
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None ):
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
@@ -155,22 +175,12 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 				#	x = pardicts[key][cfn][-clen:]/pardicts[key][relative[cfn]][-clen:]
 			else:
 				x = pardicts[key][cfn]
-			normed = True
-			if isinstance(bins,int):
-				tbins, weights = choose_bins_n_weights(x, bins, linear=(key in clinpars))
-				if key in clinpars:
-					normed = True
-				else:
-					normed = False
-			else:
-				tbins = bins
-			# FIXME: if someone provided bins, then weights is unset
-			n,b,p = ax.hist(x, bins=tbins, normed=normed, weights=weights, color=colors[cfn], histtype='stepfilled', linewidth=0.0, alpha=0.2)
-			ax.add_patch( matplotlib.patches.Polygon(p[0].get_xy(), fill=False, alpha=None, edgecolor=colors[cfn], linewidth=2.0) )
-			nmax = max(numpy.max(n),nmax)
+			if type(x) is float: # if x is not an array, don't plot
+				continue
+			n = hist(ax, x, bins=bins, linear=(key in clinpars), density=True, weights=weights, color=colors[cfn])
+			nmax = max(n,nmax)
 
 		ax.set_title(labels[i])
 		ax.set_ylim(0, 1.1*nmax)
-		if key not in clinpars:
-			ax.set_xscale('log')
 	return gridfig
+
