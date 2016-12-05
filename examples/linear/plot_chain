@@ -55,6 +55,6 @@ if True:
 	colors = ['blue']
 	plotpars = allpars
 	plotlabels = [labeldic[key] for key in plotpars]
-	fig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
-	fig.savefig('hists_lin.pdf', bbox_inches='tight')
+	gridfig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
+	gridfig.fig.savefig('hists_lin.pdf', bbox_inches='tight')
 

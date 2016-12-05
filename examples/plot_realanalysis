@@ -64,7 +64,7 @@ if False:
 	relative = []
 	plotpars = ['tE','pfcell','tinf','prcell','tI','b']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative, nburn=0)
+	gridfig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,2), labels=plotlabels, relative=relative, nburn=0)
 	# Add fig label (D) and stat signif (*)
 	ax = fig.axes[plotpars.index('tE')]
 	ax.text(4.5,1.0,r'(D)')
@@ -73,7 +73,7 @@ if False:
 	ax = fig.axes[plotpars.index('tI')]
 	ax.set_xlim(left=0.0)
 	ax.text(41.0,0.08,r'($\star$)')
-	fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
+	gridfig.fig.savefig('realouts/hist_IV.pdf', bbox_inches='tight')
 
 # Making a grid of relative hist plots (Fig 3)
 if False:
@@ -83,7 +83,7 @@ if False:
 	colors = ['black','red','blue', 'green']
 	plotpars = ['tE', 'tinf', 'tI', 'cpfu', 'prcell', 'pfcell', 'pf2r', 'pfs2fm', 'b', 'vom', 'vop2r']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
+	gridfig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(3,4), labels=plotlabels, relative=relative)
 	# Fix xlabels for first row (lin pars)
 	for key in ['tE','tinf','tI','cpfu']:
 		ax = fig.axes[plotpars.index(key)]
@@ -102,7 +102,7 @@ if False:
 	ax.text(3.0e4,0.85,r'MUT-H275Y',color=colors[1])
 	ax.text(3.0e4,0.55,r'WT-I223',color=colors[2])
 	ax.text(3.0e4,0.35,r'MUT-I223V',color=colors[3])
-	fig.savefig('realouts/hist_rel_HYIV.pdf', bbox_inches='tight')
+	gridfig.fig.savefig('realouts/hist_rel_HYIV.pdf', bbox_inches='tight')
 
 # Making a grid of absolute hist plots for previous vs current (Fig 5)
 if True:
@@ -112,7 +112,7 @@ if True:
 	relative = []
 	plotpars = ['cpfu','pfs2fm','pf2r']
 	plotlabels = [parlabeldict[key] for key in plotpars]
-	fig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(2,2), labels=plotlabels, relative=relative)
+	gridfig = phymcmc.plot.hist_grid(plotpars, chain_files, colors, dims=(2,2), labels=plotlabels, relative=relative)
 	# Fix xaxis for cpfu
 	ax = fig.axes[plotpars.index('cpfu')]
 	ax.set_xticks(numpy.arange(0.0,0.25,0.05))
@@ -125,5 +125,5 @@ if True:
 	ax.text(3.0e0,1.4,r'MUT-H275Y (Pinilla, 2012)',color=colors[1])
 	ax.text(3.0e0,0.8,r'WT-I223 (current)',color=colors[2])
 	ax.text(3.0e0,0.4,r'MUT-I223V (current)',color=colors[3])
-	fig.savefig('realouts/hist_abs_HI.pdf', bbox_inches='tight')
+	gridfig.fig.savefig('realouts/hist_abs_HI.pdf', bbox_inches='tight')
 
