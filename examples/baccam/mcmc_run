@@ -36,7 +36,7 @@ params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
 # MCMC parameters
 mcpars = dict(
-	chain_file = 'outputs/chain_burn1000.hdf5',
+	chain_file = 'chain_burn1000.hdf5',
 	model = baccam.model,
 	nwalkers = 300,
 	nsteps = 1000,

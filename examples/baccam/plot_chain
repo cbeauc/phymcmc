@@ -40,7 +40,7 @@ if True:
 	plotpars = allpars[:5]
 	plotlabels = plotpars
 	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
-	fig.savefig('outputs/triangle_%s.png'%fname, bbox_inches='tight')
+	fig.savefig('triangle_%s.png'%fname, bbox_inches='tight')
 
 # Making histogram grid of all params
 if True:
