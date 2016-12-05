@@ -48,7 +48,11 @@ if True:
 	plotpars = allpars[:-1]
 	plotlabels = plotpars
 	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
+	# Make PDF from PNG otherwise PDF is too big
+	import subprocess
 	fig.savefig('triangle_lin.png', bbox_inches='tight')
+	subprocess.call('convert triangle_lin.png triangle_lin.pdf', shell=True)
+	subprocess.call('rm -f triangle_lin.png', shell=True)
 
 # Making histogram grid of all params
 if True:
