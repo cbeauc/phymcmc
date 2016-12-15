@@ -14,6 +14,7 @@ setup(
 	],
 	scripts = [
 		'bin/phymcmc_diagnostics',
+		'bin/phymcmc_fix_fracaccept',
 		'bin/phymcmc_parstats',
 		'bin/phymcmc_rmderived'
 	],

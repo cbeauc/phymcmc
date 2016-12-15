@@ -83,7 +83,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	)
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
-	sampler.acceptance_fraction = mcchain.attrs['acceptance_fraction']
+	sampler.acceptance_fraction = f['acceptance_fraction'].value
 	sampler.acor = f['autocorr'].value
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
@@ -191,7 +191,7 @@ class MCSampler( object ):
 		"""
 			Initialize position of walkers in mcmc chain from arrays."
 			Input:
-				curpos (reqired) = current position of walkers
+				curpos (required) = current position of walkers
 				lnprob (optional) = ln likelihood probability
 			The lenght of lnprob and curpos must match.
 			The number of columns and parameter order in curpos should match
@@ -283,15 +283,18 @@ class MCSampler( object ):
 				nl = len(lnprobs)
 				f = h5py.File(self.chain_file, "r+")
 				s = f['mcchain'].attrs['filledlength']
-				f['mcchain'][s:s+nl,0] = -lnprobs
+				f['mcchain'][s:s+nl,0] = -2.0*lnprobs # convert to SSR
 				f['mcchain'][s:s+nl,1:] = numpy.array(poss).reshape((nl,self.npars))
 				f['mcchain'].attrs['filledlength'] = s+nl
-				f['mcchain'].attrs['acceptance_fraction'] = self.acceptance_fraction
+				# If acceptance_fraction already exists
+				if 'acceptance_fraction' in f:
+					del f['acceptance_fraction']
+				f.create_dataset('acceptance_fraction', data=numpy.array(self.acceptance_fraction))
 				# If autocorr already exists, delete it before proceeding
 				if 'autocorr' in f:
 					del f['autocorr']
-				# Create the chain structure to hold the autocorr array
 				f.create_dataset('autocorr', data=numpy.array(self.acor))
+				# All done updating hdf5 file
 				f.close()
 				if self.verbose:
 					twrite = time.time()
@@ -312,7 +315,7 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	# Build dictionary of chain attributes
 	chainattrs = {}
 	chainattrs['parfit'] = mcchain.attrs['parfit']
-	chainattrs['acceptance_fraction'] = mcchain.attrs['acceptance_fraction']
+	chainattrs['acceptance_fraction'] = f['acceptance_fraction'].value
 	chainattrs['acor'] = f['autocorr'].value
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
