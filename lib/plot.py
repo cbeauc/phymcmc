@@ -100,16 +100,14 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 
 def choose_bins(x, nbins, linear=False):
 	# FIXME: percentile will change based on weights but not accouted for!!!
-	whm = numpy.percentile(x,[15.87,50,84.13])
-	# The secret to beautiful histograms
 	if linear:
+		whm = numpy.percentile(x,[15.87,50,84.13])
 		return numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],nbins)
-	return numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
+	whm = numpy.percentile(numpy.log10(x),[15.87,50,84.13])
+	return 10.**numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
 
 
 def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
-	if not linear:
-		x = numpy.log10(x)
 	# Select the binning
 	if isinstance(bins,int):
 		tbins = choose_bins( x, bins, linear=linear )
@@ -119,8 +117,6 @@ def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
 	n,b = numpy.histogram( x, tbins, weights=weights )
 	if density:
 		n = n * 1.0 / numpy.sum(n) / numpy.diff(b)
-	if not linear:
-		b = 10.0**b
 	# Now we're ready to make a beautiful histogram
 	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
 	facecol = tuple( facecol + [0.2] ) # Add alpha for face
@@ -132,7 +128,34 @@ def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
 	return n.max()
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None ):
+def lalhist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
+	import lalrate
+	# Select the binning
+	assert isinstance(bins,int), 'bins argument should be an integer, not actual bin edges'
+	if linear:
+		bins = lalrate.NDBins((lalrate.LinearBins(x.min(),x.max(),5*bins),))
+	else:
+		bins = lalrate.NDBins((lalrate.LogarithmicBins(x.min(),x.max(),5*bins),))
+	pdf = lalrate.BinnedArray(bins)
+	# Distribute data into the bins
+	pdf.array[:],__ = numpy.histogram( x, numpy.hstack((bins.lower()[0],bins.upper()[0][-1])), weights=weights )
+	#window = lalrate.gaussian_window(5)
+	window = numpy.arange(21, dtype = "double") - 10.
+	window = numpy.exp(-.5 * window**2. / (10**2 / 3.))
+	window /= window.sum()
+	lalrate.filter_array(pdf.array, window)
+	if density:
+		pdf.to_pdf()
+	# Now we're ready to make a beautiful histogram
+	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
+	facecol = tuple( facecol + [0.2] ) # Add alpha for face
+	ax.fill( pdf.centres()[0], pdf.array, facecolor=facecol, edgecolor=color, linewidth=2.0 )
+	if not linear:
+		ax.set_xscale('log')
+	return pdf.array.max()
+
+
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, hist=hist ):
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
