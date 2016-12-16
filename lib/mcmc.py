@@ -87,7 +87,7 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	sampler.acor = f['autocorr'].value
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
-	sampler.curlnprob = -mcchaincopy[idx:,0]
+	sampler.curlnprob = -0.5*mcchaincopy[idx:,0]
 	sampler.curpos = mcchaincopy[idx:,1:]
 	f.close()
 	return sampler
@@ -137,7 +137,7 @@ class MCSampler( object ):
 		self.curpos[0,:] = self.par.vector
 		self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
 		if self.verbose:
-			print('# Accepted walker: 0 (ssr=%g)' % -self.curlnprob[0])
+			print('# Accepted walker: 0 (ssr=%g)' % -2.0*self.curlnprob[0])
 			print( ('%g '*self.npars) % tuple(self.par.vector) )
 
 		# the remaining walkers are distributed randomly, uniformly (lin or log)
@@ -154,7 +154,7 @@ class MCSampler( object ):
 			# accept or reject the candidate position
 			lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
 			if not math.isinf( lprob ):
-				if (self.maxssr == 1.0e20) or (-lprob < self.maxssr):
+				if (self.maxssr == 1.0e20) or (-2.*lprob < self.maxssr):
 					self.curlnprob[wrem] = lprob
 					self.curpos[wrem,:] = pcandidate
 					if self.verbose:
@@ -179,7 +179,7 @@ class MCSampler( object ):
 		# Now re-position your walkers at their last location
 		idf = mcchain.attrs['filledlength']
 		idi = idf-mcchain.attrs['nwalkers']
-		self.curlnprob = -mcchaincopy[idi:idf,0]
+		self.curlnprob = -0.5*mcchaincopy[idi:idf,0]
 		self.curpos = mcchaincopy[idi:idf,1:]
 		f.close()
 		self.init_chainfile()
@@ -245,7 +245,7 @@ class MCSampler( object ):
 		fchain.attrs['linpars'] = self.linpars
 		# Store the walker's original position into the chain file
 		nl = self.nwalkers
-		f['mcchain'][:nl,0] = -self.curlnprob
+		f['mcchain'][:nl,0] = -2.0*self.curlnprob
 		f['mcchain'][:nl,1:] = self.curpos
 		f['mcchain'].attrs['filledlength'] = nl
 		f.close()
