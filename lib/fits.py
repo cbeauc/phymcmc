@@ -21,6 +21,7 @@
 # =============================================================================
 #
 
+from __future__ import print_function
 import numpy
 import scipy.optimize
 PosInf = float('+inf')
@@ -34,68 +35,66 @@ PosInf = float('+inf')
 #
 
 
-def ssrify( modeldata, expdata ):
-	""" Computes the sum-of-squared of the log10 of the residuals. """
-	return numpy.sum( numpy.log10( modeldata/expdata )**2.0 )
+def rcost(pvec, model, maxssr):
+	return numpy.ones(pvec.shape)*scost(pvec, model, maxssr)
 
-def rcost(pvec, model, params, maxssr, args):
-	return numpy.ones(pvec.shape)*scost(pvec, model, params, maxssr, args)
-
-def scost(pvec, model, params, maxssr, args):
+def scost(pvec, model, maxssr):
 	pvec = 10.0**pvec
 	try:
-		tmp = model(pvec,params)
-	except ValueError: # Problem with parameters
+		nssr = model.get_normalized_ssr(pvec)
+	except ValueError: # Invalid parameters
 		return maxssr
-	#print( params.pardict )
-	try:
-		ssr = tmp.get_ssr(args)
-		#print('ssr = '+repr(ssr)+'\n')
-		return ssr
-	except: # Unknown/unforeseen problem
-		print('WARNING: Your code believes the parameters are valid but the call to get_ssr failed. Figure out why and fix this problem.')
+	except: # Unknown error
+		print('WARNING: Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.')
+		print 'params:', model.params
+		print 'nssr:', nssr
 		return maxssr
+	import math
+	if math.isnan( nssr ):
+		print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(self.par), file=sys.stderr)
+		return maxssr
+	return nssr
 
 
-def perform_fit(model, params, args, verbose=True, maxssr=PosInf, rep_fit=3):
+def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
 	if verbose:
-		print(params.parfit)
-		print(params.vector)
+		print(model.params.parfit)
+		print(model.params.vector)
 
 	# It's best to fit parameters in log space
-	pvec = numpy.log10(params.vector)
+	pvec = numpy.log10(model.params.vector)
 	if verbose:
-		ssr = scost(pvec, model, params, maxssr, args)
+		ssr = scost(pvec, model, maxssr)
 		print( 'Starting ssr = %g\n' % ssr )
 
 	# Do rep_fit fits w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
 	for rep in range(rep_fit):
-		lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,maxssr,args), maxfev=7200, full_output=True)[0:3]
+		lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,maxssr), maxfev=7200, full_output=True)[0:3]
 		pvec = lsout[0]
-		params.vector = 10.0**pvec
+		model.params.vector = 10.0**pvec
 		ssr = lsout[2]['fvec'][0]
 		if verbose:
 			print( 'Levenberg-Marquardt, rep %d (ssr = %g)' % (rep,ssr) )
-			print( params.pardict )
+			print( model.params.pardict )
 
 	# One long but more accurate fit using the Nelder-Mead downhill simplex
-	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,params,maxssr,args), full_output=True, disp=False)[0:2]
-	params.vector = 10.0**pvec
+	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,maxssr), full_output=True, disp=False)[0:2]
+	model.params.vector = 10.0**pvec
 	if verbose:
 		print( 'Nelder-Mead (ssr = %g)' % ssr )
-		print( params.pardict )
+		print( model.params.pardict )
 
 	# One last fit w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
-	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,params,maxssr,args), maxfev=7200, full_output=True)
+	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,maxssr), maxfev=7200, full_output=True)
 	pvec = lsout[0]
-	params.vector = 10.0**pvec
+	model.params.vector = 10.0**pvec
 	ssr = lsout[2]['fvec'][0]
 	if verbose:
 		print( 'Levenberg-Marquardt (final fit, ssr = %g)' % ssr )
-		print( params.pardict )
+		print( model.params.pardict )
 
 	# Returns (best-fit parameters, SSR)
-	return (params, ssr)
+	return (model.params, ssr)
 
 
 def mock_yield_coeff(data):

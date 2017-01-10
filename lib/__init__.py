@@ -15,6 +15,9 @@
 
 # =============================================================================
 
+from __future__ import print_function
+NegInf = float('-inf')
+
 class ParamStruct(object):
 	def __init__(self,pardict,parfit):
 		self.pardict = pardict
@@ -27,3 +30,39 @@ class ParamStruct(object):
 		for key,val in zip(self.parfit,fittedpars):
 			self.pardict[key] = val
 
+
+class base_model(object):
+	def __init__(self, data, params):
+		self.data = data
+		self.params = params
+	def get_normalized_ssr(self,pvec):
+		""" Computes total normalized SSR, i.e. SSR/stdev. """
+		raise NotImplementedError
+	def get_lnprob(self,pvec):
+		"""
+			Determine the lnprob for the model, given the parameters.
+			for running a log parameter in lin scale or whatever). But
+			DO NOT check here for NaN. The sanity parsing of the SSR value
+			is done by the lnprobfn function in the phymcmc MCMC library.
+		"""
+		try:
+			nssr = self.get_normalized_ssr(pvec)
+		except ValueError: # return if params are invalid
+			return NegInf
+		# IF we get a NaN...
+		# We should NOT ignore this since passing -inf is equivalent to
+		#   forbidding this parameter set value. So this is an additional
+		#   constraint we place on our parameters that we MUST be told
+		#   about. When you encounter this warning, investigate!
+		import math
+		if math.isnan( nssr ):
+			print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(self.params.pardict), file=sys.stderr)
+			return NegInf
+		return -0.5*nssr
+
+
+def odeint(*args,**kwargs):
+	import scipy.integrate
+	assert 'mxstep' not in kwargs
+	kwargs['mxstep'] = 4000000
+	return scipy.integrate.odeint(*args,**kwargs)

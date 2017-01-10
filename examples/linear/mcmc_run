@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,20 +40,20 @@ dat = numpy.loadtxt('lin.dat')
 # 	should normally be the output of a best-fit to start in good place
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
+# Create params structure
 params = phymcmc.ParamStruct(pdic.copy(),pfit)
+# Grab model instance
+model = linmod.line(dat, params)
 
 # MCMC parameters
 mcpars = dict(
 	chain_file = 'chain_lin.hdf5',
-	model = linmod.model,
+	model = model,
 	nwalkers = 300,
 	nsteps = 400,
-	par = params,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space
-	linpars = ['ssr', 'slope', 'yint'],
-	# Arguments (args) passed to lnpostfn such that lnpostfn(pvec,par,args)
-	args = dat,
+	linpars = ['lnprob', 'slope', 'yint'],
 	threads = 4
 )
 # Setting up the MCMC sampler

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -34,12 +34,19 @@ import phymcmc.fits
 # =============================================================================
 #
 
+# Your data
+# (feel free to pack other non-varying arguments in there)
 dat = numpy.loadtxt("lin.dat")
 
 # Would either load params or initialize and fit
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
 
-# Now fit the parameters
+# Create params structure
 params = phymcmc.ParamStruct(pdic.copy(),pfit)
-params,bfssr = phymcmc.fits.perform_fit(linmod.model,params,dat,verbose=True,rep_fit=3)
+
+# Grab model instance
+model = linmod.line(dat, params)
+
+# Now fit the parameters
+params,bfssr = phymcmc.fits.perform_fit(model,verbose=True,rep_fit=3)

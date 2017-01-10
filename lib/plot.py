@@ -73,7 +73,7 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 	data = []
 	# Best-fit values
 	truths = [] # blue vertical line in hist plot (dashed-black is median)
-	iminssr = pardict['ssr'].argmin() # index of min ssr
+	imaxlnprob = pardict['lnprob'].argmax() # index of max lnprob
 	# Range for parameter (x) axis
 	extents = []
 	for i,p in enumerate(parlist):
@@ -82,18 +82,18 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 		else:
 			data.append( numpy.log10( pardict[p] ) )
 			labels[i] = r'log$_{10}$ '+labels[i]
-		truths.append( data[-1][iminssr] )
+		truths.append( data[-1][imaxlnprob] )
 	data = numpy.vstack( data ).T
 	from .emcee import corner as dfmtriangle
 	fig = dfmtriangle.corner(data, labels=labels, truths=truths, weights=weights)
-	# Now add a histogram for SSR
-	x = pardict['ssr']
+	# Now add a histogram for lnprob
+	x = pardict['lnprob']
 	ax = fig.axes[len(parlist)-2]
 	ax.set_visible(True)
 	ax.set_frame_on(True)
-	ax.set_title('SSR')
+	ax.set_title('lnProb')
 	ax.set_yticklabels([])
-	tbins = numpy.linspace(x.min(),x.min()+3.5*(numpy.median(x)-x.min()),50)
+	tbins = numpy.linspace(x.max()-3.5*(x.max()-numpy.median(x)),x.max(),50)
 	ax.hist(x, bins=tbins, normed=True, color='black', histtype='step')
 	return fig
 

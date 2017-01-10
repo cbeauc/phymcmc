@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,6 +28,8 @@ def add_biological_params( pdic ):
 	biodic['tinf'] = numpy.sqrt(2.0*pdic['N']/pdic['p']/pdic['b'])
 	# Half-life (h)
 	biodic['chalf'] = numpy.log(2.0)/pdic['c']
+	# SSR = -2*lnprob [unless base_model.get_lnprob overwritten by user model]
+	biodic['ssr'] = -2.0*pdic['lnprob']
 	return biodic
 
 # Read chain_file name from command-line (1st argument)

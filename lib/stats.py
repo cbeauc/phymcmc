@@ -208,7 +208,7 @@ def chains_compare( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 
 		# Now let's look at that second chain
 		for id2 in range(id1+1,nchains):
 			pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id2], nburn=nburn)
-			nvals = min(len(pdic1['ssr']), len(pdic2['ssr']))
+			nvals = min(len(pdic1['lnprob']), len(pdic2['lnprob']))
 
 			# Compute p-value for each key
 			for key in parlist:
@@ -314,10 +314,10 @@ def print_chain_parstats( chainfile1, chainfile2=None, parlist=None ):
 
 	if chainfile2 is None:
 		attrs2 = attrs1
-		nvals = len(pdic1['ssr'])
+		nvals = len(pdic1['lnprob'])
 	else:
 		pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfile2, nburn=0)
-		nvals = min(len(pdic1['ssr']), len(pdic2['ssr']))
+		nvals = min(len(pdic1['lnprob']), len(pdic2['lnprob']))
 
 	for key in parlist:
 

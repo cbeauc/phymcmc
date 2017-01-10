@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,6 +36,7 @@ import phymcmc.plot
 chainfile = os.path.abspath('chain_lin.hdf5')
 
 labeldic = {
+	'lnprob': r'lnProbability',
 	'ssr': r'Sum squared resid, SSR',
 	'slope': r'slope, $m$',
 	'yint': r'$y_\mathrm{int}$',
@@ -61,4 +62,3 @@ if True:
 	plotlabels = [labeldic[key] for key in plotpars]
 	gridfig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
 	gridfig.fig.savefig('hists_lin.pdf', bbox_inches='tight')
-

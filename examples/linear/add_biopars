@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -39,6 +39,8 @@ def add_biological_params( pdic ):
 	Volume = 0.5
 	# Example of a computed biological parameter (add as many as you want)
 	biodic['slotyint'] = pdic['slope']*pdic['yint']/Volume/N
+	# SSR = -2*lnprob [unless base_model.get_lnprob overwritten by user model]
+	biodic['ssr'] = -2.0*pdic['lnprob']
 	return biodic
 
 #

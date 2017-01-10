@@ -29,7 +29,6 @@ import numpy
 import random
 import sys
 import time
-NegInf = float('-inf')
 
 #
 # =============================================================================
@@ -41,19 +40,10 @@ NegInf = float('-inf')
 
 
 def lnprobfn(pvec,model,*args,**kwargs):
-	lnprob = model.get_lnprob(pvec,*args,**kwargs)
-	# IF we get a NaN...
-	# We should NOT ignore this since passing -inf is equivalent to
-	#   forbidding this parameter set value. So this is an additional
-	#   constraint we place on our parameters that we MUST be told
-	#   about. When you encounter this warning, investigate!
-	if math.isnan( lnprob ):
-		print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(pvec), file=sys.stderr)
-		return NegInf
-	return lnprob
+	return model.get_lnprob(pvec)
 
 
-def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose=True ):
+def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 	# FIXME: should work but never been tested
 	#	args should contain fitting data, for example!
 	# NOTE: will only work if filledlength less than nwalkers*(nstep+1)
@@ -61,22 +51,16 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	f = h5py.File( chain_file, "r" )
 	mcchain = f['mcchain']
 	mcchaincopy = mcchain.value
-	# Recuperate best-fit params
-	pdic = eval( mcchain.attrs['pardict'] )
-	pfit = mcchain.attrs['parfit'][1:] # discard SSR as a fitting parameter
-	params = phymcmc.fits.ParamStruct(pdic,pfit)
 	# Set sampler parameters from chain_file
 	mcpars = dict(
 		chain_file = chain_file,
 		model = model,
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
-		par = params,
+		linpars = mcchain.attrs['linpars'],
 		stepsize = mcchain.attrs['stepsize'],
 		linbw = mcchain.attrs['linbw'],
 		logbw = mcchain.attrs['linbw'],
-		linpars = mcchain.attrs['linpars'],
-		args = args,
 		threads = threads,
 		pool = pool,
 		verbose = verbose
@@ -87,33 +71,31 @@ def restart_sampler( chain_file, model, args=None, threads=1, pool=None, verbose
 	sampler.acor = f['autocorr'].value
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
-	sampler.curlnprob = -0.5*mcchaincopy[idx:,0]
+	sampler.curlnprob = mcchaincopy[idx:,0]
 	sampler.curpos = mcchaincopy[idx:,1:]
 	f.close()
 	return sampler
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, par, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], args=None, threads=1, pool=None, maxssr=1.0e20, verbose=True):
+	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], threads=1, pool=None, minlnprob=-1e20, verbose=True):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
 		self.nwalkers = nwalkers
 		self.nsteps = nsteps
-		self.par = par
 		# Optional arguments
 		self.stepsize = stepsize
 		self.linbw = linbw
 		self.logbw = logbw
 		self.linpars = linpars
-		self.args = args if args is not None else ()
 		self.threads = threads
 		self.pool = pool
-		self.maxssr = maxssr
+		self.minlnprob = minlnprob
 		self.verbose = verbose
 
 		# Additional parameters/properties of sampler
-		self.npars = len(self.par.parfit)
+		self.npars = len(self.model.params.parfit)
 		self.acceptance_fraction = []
 		self.acor = []
 
@@ -121,54 +103,64 @@ class MCSampler( object ):
 		assert 0.0 < self.linbw < 1.0, "MCMC parameter linboxwidth must be in (0,1)"
 
 		# Acquire the emcee sampler
-		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=(self.model,self.par,self.args), threads=self.threads, pool=self.pool)
+		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=(self.model,[]), threads=self.threads, pool=self.pool)
+
+
+	def create_curlnprob(self, curpos):
+		self.curlnprob = numpy.zeros( self.nwalkers )
+		for idx,pcandidate in enumerate(curpos):
+			lprob = lnprobfn(pcandidate,self.model)
+			# Sanity-check the candidate positions
+			assert not math.isinf(lprob), 'A provided parameter set gave infinite lnprob on row %d:\n par=%s.' % (idx,str(pcandidate))
+			assert not math.isnan(lprob), 'A provided parameter set gave NaN lnprob on row %d:\n par=%s.' % (idx,str(pcandidate))
+			self.curlnprob[idx] = lprob
+			if self.verbose:
+				print('# Accepted walker: %d (lnprob=%g)' % (idx,lprob))
+				print( ('%g '*self.npars) % tuple(pcandidate) )
+				sys.stdout.flush()
 
 
 	def init_walkers_for_me(self):
-		tstart = time.time()
+		self.tstart = time.time()
 		# Position all your walkers
 		if self.verbose:
-			print('Positioning the walkers')
-		# the initial position array has dimensions (nwalker, nparams)
+			print('Positioning the walkers randomly-uniformly for you')
+		# initial position array has dimensions (nwalker, nparams)
 		self.curpos = numpy.zeros( (self.nwalkers, self.npars) )
 		self.curlnprob = numpy.zeros( self.nwalkers )
-
 		# walker 0 gets started at the best fit position (centre)
-		self.curpos[0,:] = self.par.vector
-		self.curlnprob[0] = lnprobfn(self.par.vector,self.model,self.par,self.args)
+		self.curpos[0,:] = self.model.params.vector
+		self.curlnprob[0] = lnprobfn(self.model.params.vector,self.model)
 		if self.verbose:
-			print('# Accepted walker: 0 (ssr=%g)' % -2.0*self.curlnprob[0])
-			print( ('%g '*self.npars) % tuple(self.par.vector) )
-
-		# the remaining walkers are distributed randomly, uniformly (lin or log)
+			print('# Accepted walker: 0 (lnprob=%g)' % self.curlnprob[0])
+			print( ('%g '*self.npars) % tuple(self.model.params.vector) )
+			sys.stdout.flush()
+		# remaining walkers are distributed randomly, uniformly (lin or log)
 		wrem = self.nwalkers-1
-		bfcentrevec = numpy.array(self.par.vector)
+		bfcentrevec = numpy.array(self.model.params.vector)
 		while wrem:
 			# generate a candidate position for a walker
 			pcandidate = bfcentrevec.copy()
-			for pi,pname in enumerate(self.par.parfit):
+			for pi,pname in enumerate(self.model.params.parfit):
 				if pname in self.linpars:
 					pcandidate[pi] *= random.uniform(1.0-self.linbw,1.0+self.linbw)
 				else:
 					pcandidate[pi] *= 10.0**random.uniform(-self.logbw,self.logbw)
 			# accept or reject the candidate position
-			lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
-			if not math.isinf( lprob ):
-				if (self.maxssr == 1.0e20) or (-2.*lprob < self.maxssr):
+			lprob = lnprobfn(pcandidate,self.model)
+			if not math.isinf(lprob) and not math.isnan(lprob):
+				if (self.minlnprob == 1.e20) or (lprob > self.minlnprob):
 					self.curlnprob[wrem] = lprob
 					self.curpos[wrem,:] = pcandidate
 					if self.verbose:
-						print('# Accepted walker: %d (ssr=%g)' % (self.nwalkers-wrem,-lprob))
+						print('# Accepted walker: %d (lnprob=%g)' % (self.nwalkers-wrem,lprob))
 						print( ('%g '*self.npars) % tuple(pcandidate) )
 						sys.stdout.flush()
 					wrem -= 1
-		self.init_chainfile()
-		if self.verbose:
-			print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
 
 
 	def init_walkers_from_chain(self,oldchainfile):
-		tstart = time.time()
+		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
 		f = h5py.File(oldchainfile, 'r')
@@ -179,12 +171,10 @@ class MCSampler( object ):
 		# Now re-position your walkers at their last location
 		idf = mcchain.attrs['filledlength']
 		idi = idf-mcchain.attrs['nwalkers']
-		self.curlnprob = -0.5*mcchaincopy[idi:idf,0]
-		self.curpos = mcchaincopy[idi:idf,1:]
 		f.close()
-		self.init_chainfile()
-		if self.verbose:
-			print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
+		self.curpos = mcchaincopy[idi:idf,1:]
+		# Re-compute lnprob (best not to trust hdf5 chain file, in case)
+		self.create_curlnprob( self.curpos )
 
 
 	def init_walkers_from_array(self,curpos,lnprob=None):
@@ -198,33 +188,19 @@ class MCSampler( object ):
 				that in the provided MCSampler's par.parfit list.
 			If lnprob not provided, it is computed for you.
 		"""
-		tstart = time.time()
+		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from arrays')
-
 		# Make sure the # walkers and # params in curpos array match request
 		assert self.nwalkers == curpos.shape[0], 'The number of walkers (lines) in curpos (%d) does not match nwalkers requested (%d).' % (len(curpos),self.nwalkers)
 		assert self.npars == curpos.shape[1], 'The number of parametres in curpos (%d) does not match npars in params (%d).' % (curpos.shape[1],self.npars)
 		self.curpos = curpos # accept positions provided
-
 		# Check if lnpos given, create if not provided
 		if lnprob is None:
-			self.curlnprob = numpy.zeros( self.nwalkers )
-			for idx,pcandidate in enumerate(curpos):
-				lprob = lnprobfn(pcandidate,self.model,self.par,self.args)
-				assert not math.isinf( lprob ), 'A provided parameter set gave inifinite lnprob on row %d:\n par=%s.' % (idx,str(pcandidate))
-				self.curlnprob[idx] = lprob
-				if self.verbose:
-					print('# Accepted walker: %d (ssr=%g)' % (idx,-lprob))
-					print( ('%g '*self.npars) % tuple(pcandidate) )
-					sys.stdout.flush()
+			self.create_curlnprob( self.curpos )
 		else: # if given, check if correct size
 			assert self.nwalkers == len(lnpos), 'The number of walkers (lines) in lnpos (%d) does not match nwalkers requested (%d).' % (len(curpos),self.nwalkers)
 			self.curlnprob = lnprob
-		# Now re-position your walkers at their last location
-		self.init_chainfile()
-		if self.verbose:
-			print('Initialization took %g min\n' % ((time.time()-tstart)/60.0))
 
 
 	def init_chainfile(self):
@@ -235,8 +211,8 @@ class MCSampler( object ):
 		fchain = f.create_dataset("mcchain", ((self.nsteps+1)*self.nwalkers,self.npars+1))
 		# Store some additional properties along with the chain
 		fchain.attrs['filledlength'] = 0
-		fchain.attrs['pardict'] = '{\'ssr\': 0.0, '+repr(self.par.pardict)[1:]
-		fchain.attrs['parfit'] = ['ssr']+self.par.parfit
+		fchain.attrs['pardict'] = '{\'lnprob\': 0.0, '+repr(self.model.params.pardict)[1:]
+		fchain.attrs['parfit'] = ['lnprob']+self.model.params.parfit
 		fchain.attrs['nwalkers'] = self.nwalkers
 		fchain.attrs['nsteps'] = self.nsteps
 		fchain.attrs['stepsize'] = self.stepsize
@@ -245,14 +221,18 @@ class MCSampler( object ):
 		fchain.attrs['linpars'] = self.linpars
 		# Store the walker's original position into the chain file
 		nl = self.nwalkers
-		f['mcchain'][:nl,0] = -2.0*self.curlnprob
+		f['mcchain'][:nl,0] = self.curlnprob
 		f['mcchain'][:nl,1:] = self.curpos
 		f['mcchain'].attrs['filledlength'] = nl
 		f.close()
+		if self.verbose:
+			print('Initialization took %g min\n' % ((time.time()-self.tstart)/60.0))
 
 	def run_mcmc(self, chunk_size=30000):
+		self.init_chainfile()
 		if self.verbose:
 			print('Starting the MCMC run...')
+			sys.stdout.flush()
 			trunstart = time.time()
 		# Now walk...
 		poss = []
@@ -262,8 +242,8 @@ class MCSampler( object ):
 		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
 
 			# Store current pos + lnprob of each walker
-			poss.append(pos*1.0)
-			lnprobs.append(lnprob*1.0)
+			poss.append(pos.copy())
+			lnprobs.append(lnprob.copy())
 
 			# Average fraction of accepted since start
 			#	averaged over all walkers (ideally in 0.2-0.5 range).
@@ -278,12 +258,12 @@ class MCSampler( object ):
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
 				if self.verbose:
 					print('   accepting %d params took %g min' % (len(lnprobs)*self.nwalkers,(time.time()-twrite)/60.0))
-					tstart = time.time()
+					self.tstart = time.time()
 				lnprobs = numpy.array(lnprobs).flatten()
 				nl = len(lnprobs)
 				f = h5py.File(self.chain_file, "r+")
 				s = f['mcchain'].attrs['filledlength']
-				f['mcchain'][s:s+nl,0] = -2.0*lnprobs # convert to SSR
+				f['mcchain'][s:s+nl,0] = lnprobs
 				f['mcchain'][s:s+nl,1:] = numpy.array(poss).reshape((nl,self.npars))
 				f['mcchain'].attrs['filledlength'] = s+nl
 				# If acceptance_fraction already exists
@@ -298,8 +278,9 @@ class MCSampler( object ):
 				f.close()
 				if self.verbose:
 					twrite = time.time()
-					print('   writing to dist took %g s' % (twrite-tstart))
+					print('   writing to dist took %g s' % (twrite-self.tstart))
 					print('Wrote %g%% of simulation to disk for you.' % (100*(nstp+1)/self.nsteps))
+					sys.stdout.flush()
 				poss = []
 				lnprobs = []
 		if self.verbose:
@@ -342,9 +323,9 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	# Slice through the two array attributes based on nburn
 	chainattrs['acceptance_fraction'] = chainattrs['acceptance_fraction'][nburn:]
 	chainattrs['acor'] = chainattrs['acor'][nburn:,:]
-	min_ssr_row = mcchaincopy[:chainattrs['filledlength'],0].argmin()
-	if min_ssr_row not in idx:
-		print('WARNING: Your best SSR was discarded when the burn-in was applied.')
+	max_lnprob_row = mcchaincopy[:chainattrs['filledlength'],0].argmax()
+	if max_lnprob_row not in idx:
+		print('WARNING: Your max lnprob was discarded when the burn-in was applied.')
 	# And now make my dictionary of parameters
 	for pi,pn in enumerate(chainattrs['parfit']):
 		pardict[pn] = mcchaincopy[idx,pi]
@@ -353,14 +334,14 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 		for pi,pn in enumerate(derivedparlist):
 			pardict[pn] = derivedchain[idx,pi]
 	# Tell people about what you got for them ;)
-	print('Your chain contained %d accepted parameters.' % len(pardict['ssr']))
+	print('Your chain contained %d accepted parameters.' % len(pardict['lnprob']))
 	return pardict, chainattrs
 
 
 def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 	opdic,pattrs = load_mcmc_chain( chain_file, nburn=nburn )
 	pfit = pattrs['parfit']
-	idx = opdic['ssr'].argmin()
+	idx = opdic['lnprob'].argmax()
 	pdic = {}
 	for key,val in opdic.items():
 		try:
@@ -369,7 +350,7 @@ def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 			pdic[key] = val
 	pfit = pfit[1:]
 	if verbose:
-		print('Your best-fit was (ssr = %g)' % pdic['ssr'])
+		print('Your best param set (lnprob = %g) was:' % pdic['lnprob'])
 		print(repr(pfit))
 		print(repr(pdic))
 	return (pdic,pfit)

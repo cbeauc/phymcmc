@@ -1,4 +1,4 @@
-# Copyright (C) 2014 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -20,44 +20,25 @@
 #
 # =============================================================================
 #
+import numpy
+import phymcmc
 
-NegInf = float('-inf')
-
-class model(object):
-	def __init__(self, pvec, par):
-		par.vector = pvec
-		# Test params validity and complain if error
-		if not params_are_valid( par.pardict ):
-			raise ValueError(par.pardict)
-		self.par = par.pardict
-	def get_solution(self,data):
+class line(phymcmc.base_model):
+	def get_solution(self):
 		""" Solve the model and obtain the model-generated data prediction. """
-		return self.par['slope']*data[:,0]+self.par['yint']
-	def get_residuals(self,data):
-		""" Computes the residuals between the model and the data. """
-		return data[:,1] - self.get_solution(data)
-	def get_ssr(self,data):
-		""" Computes total SSR from residuals. """
-		return (self.get_residuals(data)**2.0).sum()
-	@classmethod
-	def get_lnprob(cls,pvec,par,dat):
-		"""
-			Determine the lnprob for the model, given the parameters.
-			This function MUST be defined in order for phymcmc.mcmc to work.
-			In this function, you can do additional calculations like add
-			some correction to the log posterior likelihood function (e.g.
-			for running a log parameter in lin scale or whatever). But
-			DO NOT check here for NaN. The sanity parsing of the SSR value
-			is done by the lnprobfn function in the phymcmc MCMC library.
-		"""
-		try:
-			self = cls(pvec,par)
-		except ValueError:
-			return NegInf
-		return -self.get_ssr(dat)
+		return self.par['slope']*self.data[:,0]+self.par['yint']
+	def get_normalized_ssr(self,pvec):
+		""" Computes total normalized SSR, i.e. SSR/stdev. """
+		self.params.vector = pvec
+		self.par = self.params.pardict
+		# Test params validity and complain if error
+		if not params_are_valid( self.params.pardict ):
+			raise ValueError(self.params.pardict)
+		# Here SSR is not normalized by standard dev of residuals but should be
+		# (see example baccam to see what I mean)
+		return numpy.sum( (self.data[:,1] - self.get_solution())**2.0 )
 
 def params_are_valid(pdic):
 	if min(pdic.values()) < 0.0:
 		return False
 	return True
-

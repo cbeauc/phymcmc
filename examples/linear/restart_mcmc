@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2016-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,34 +41,27 @@ dat = numpy.loadtxt('lin.dat')
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
 params = phymcmc.ParamStruct(pdic.copy(),pfit)
+model = linmod.line(dat, params)
 
 # MCMC parameters
 mcpars = dict(
 	chain_file = 'chain_lin_arr.hdf5',
-	model = linmod.model,
+	model = model,
 	nwalkers = 300,
 	nsteps = 400,
-	par = params,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space
-	linpars = ['ssr', 'slope', 'yint'],
-	# Arguments (args) passed to lnpostfn such that lnpostfn(pvec,par,args)
-	args = dat,
+	linpars = ['lnprob', 'slope', 'yint'],
 	threads = 4
 )
 # Setting up the MCMC sampler
 mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
-# Initialize walker position from array
-#     build the array (up to you how you do this)
+# Example on how to initialize walker positions from an array
+#   (it is up to you how you build the array)
 import numpy.random
 initslope = numpy.random.randn(mcpars['nwalkers'])*2.5+15.0
 inityint = numpy.random.randn(mcpars['nwalkers'])*2.0+9.0
 initpos = numpy.vstack((initslope,inityint)).T
-# init_walkers_from_array has optional argument lnprob
-#  if not "None", you can use it to provide lnprob yourself
-#     See mcsampler.init_walkers_from_array in phymcmc/mcmc.py
-#     for an example of how it's done.
-#  if lnprob is omitted or None (default) = phymcmc does it for you
 mcsampler.init_walkers_from_array(initpos)
 # Performing the MCMC run
 mcsampler.run_mcmc()

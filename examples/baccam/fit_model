@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,9 +23,10 @@ import phymcmc.fits
 dat = numpy.loadtxt("baccam.dat")
 dathpi = dat[:,0]
 datV = dat[:,1]
+# Your data
+# (feel free to pack other non-varying arguments in there)
 dat = (dathpi,datV)
 
-# Would either load params or initialize and fit
 pdic = dict(
 	Vlim = 10.0**0.5, # Limit of detection for V
 	N = 4.0e8,	# Ncells as per paper
@@ -36,13 +37,18 @@ pdic = dict(
 	V0 = datV[0]
 )
 pfit = ['p','c','b','V0']
+
+# Create params structure
 params = phymcmc.ParamStruct(pdic.copy(),pfit)
 
+# Grab model instance
+model = baccam.model(dat, params)
+
 # Fit model to data
-params,bfssr = phymcmc.fits.perform_fit(baccam.model,params,dat)
+params,bfssr = phymcmc.fits.perform_fit(model,verbose=True)
 
 # Solve and save results
 t = numpy.linspace(0.0,dathpi[-1])
-res = baccam.model(params.vector, params).get_solution(t)
+res = model.get_solution(t)
 mV = numpy.hstack((numpy.matrix(t).T,res))
 numpy.savetxt('soln_V.dat', mV)
