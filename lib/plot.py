@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -107,7 +107,7 @@ def choose_bins(x, nbins, linear=False):
 	return 10.**numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
 
 
-def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
+def hist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'):
 	# Select the binning
 	if isinstance(bins,int):
 		tbins = choose_bins( x, bins, linear=linear )
@@ -115,8 +115,10 @@ def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
 		tbins = bins
 	# Distribute data into the bins
 	n,b = numpy.histogram( x, tbins, weights=weights )
-	if density:
+	if scaling == 'density':
 		n = n * 1.0 / numpy.sum(n) / numpy.diff(b)
+	elif scaling == 'normalized':
+		n = n * 1.0 / numpy.max(n)
 	# Now we're ready to make a beautiful histogram
 	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
 	facecol = tuple( facecol + [0.2] ) # Add alpha for face
@@ -128,7 +130,7 @@ def hist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
 	return n.max()
 
 
-def lalhist( ax, x, bins, linear=False, density=False, weights=None, color='blue'):
+def lalhist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'):
 	import lalrate
 	# Select the binning
 	assert isinstance(bins,int), 'bins argument should be an integer, not actual bin edges'
@@ -144,7 +146,7 @@ def lalhist( ax, x, bins, linear=False, density=False, weights=None, color='blue
 	window = numpy.exp(-.5 * window**2. / (10**2 / 3.))
 	window /= window.sum()
 	lalrate.filter_array(pdf.array, window)
-	if density:
+	if scaling == 'density':
 		pdf.to_pdf()
 	# Now we're ready to make a beautiful histogram
 	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
@@ -155,7 +157,7 @@ def lalhist( ax, x, bins, linear=False, density=False, weights=None, color='blue
 	return pdf.array.max()
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, hist=hist ):
+def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, scaling='normalized', hist=hist ):
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
 		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
@@ -200,10 +202,9 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 				x = pardicts[key][cfn]
 			if type(x) is float: # if x is not an array, don't plot
 				continue
-			n = hist(ax, x, bins=bins, linear=(key in clinpars), density=True, weights=weights, color=colors[cfn])
+			n = hist(ax, x, bins=bins, linear=(key in clinpars), scaling=scaling, weights=weights, color=colors[cfn])
 			nmax = max(n,nmax)
 
-		ax.set_title(labels[i])
+		ax.set_xlabel(labels[i])
 		ax.set_ylim(0, 1.1*nmax)
 	return gridfig
-
