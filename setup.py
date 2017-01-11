@@ -17,7 +17,7 @@ from distutils.core import setup
 
 setup(
 	name = 'phymcmc',
-	version = '0.2',
+	version = '0.3',
 	author = 'Catherine Beauchemin',
 	author_email = 'cbeau@users.sourceforge.net',
 	description = 'The phymbie fitting/mcmc library.',
