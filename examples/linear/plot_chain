@@ -36,7 +36,7 @@ import phymcmc.plot
 chainfile = os.path.abspath('chain_lin.hdf5')
 
 labeldic = {
-	'lnprob': r'lnProbability',
+	'lnprob': r'lnLikelihood',
 	'ssr': r'Sum squared resid, SSR',
 	'slope': r'slope, $m$',
 	'yint': r'$y_\mathrm{int}$',

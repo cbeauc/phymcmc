@@ -34,7 +34,7 @@ pdic = {'Vlim': 3.1622776601683795, 'nI': 16, 'c': 0.14348164740989799, 'b': 1.5
 
 # Setup and initialize your model instance
 pfit = ['p','c','b','V0']
-params = phymcmc.ParamStruct(pdic.copy(),pfit)
+params = baccam.params(pdic.copy(),pfit)
 model = baccam.model(dat,params)
 
 # MCMC parameters

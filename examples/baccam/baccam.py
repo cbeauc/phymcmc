@@ -18,8 +18,16 @@
 import numpy
 import phymcmc
 
-class model(phymcmc.base_model):
+class params(phymcmc.ParamStruct):
+	def validate(self):
+		""" Assess validity of model parameters. """
+		if min(self.pardict.values()) < 0.0:
+			raise ValueError(self.pardict)
+		if not (0.01 < self.pardict['c'] < 10.0):
+			raise ValueError(self.pardict)
 
+
+class model(phymcmc.base_model):
 	def derivative(self,x,t):
 		""" Return the derivative of each variable of the model. """
 		(V,T,I) = (x[0],x[1],x[2:])
@@ -42,18 +50,6 @@ class model(phymcmc.base_model):
 	def get_normalized_ssr(self,pvec):
 		""" Computes total normalized SSR, i.e. SSR/stdev. """
 		self.params.vector = pvec
-		# Test params validity and complain if error
-		if not params_are_valid( self.params.pardict ):
-			raise ValueError(self.params.pardict)
 		dathpi,datV,sigV = self.data
 		residuals = numpy.log10( self.get_solution(dathpi)[:,0]/datV )/sigV
 		return (residuals**2.0).sum()
-
-
-def params_are_valid(pdic):
-	""" Assess validity of model parameters. """
-	if min(pdic.values()) < 0.0:
-		return False
-	if not (0.01 < pdic['c'] < 10.0):
-		return False
-	return True

@@ -23,6 +23,14 @@
 import numpy
 import phymcmc
 
+
+class params(phymcmc.ParamStruct):
+	def validate(self):
+		""" Assess validity of model parameters. """
+		if min(self.pardict.values()) < 0.0:
+			raise ValueError(self.pardict)
+
+
 class line(phymcmc.base_model):
 	def get_solution(self):
 		""" Solve the model and obtain the model-generated data prediction. """
@@ -31,14 +39,6 @@ class line(phymcmc.base_model):
 		""" Computes total normalized SSR, i.e. SSR/stdev. """
 		self.params.vector = pvec
 		self.par = self.params.pardict
-		# Test params validity and complain if error
-		if not params_are_valid( self.params.pardict ):
-			raise ValueError(self.params.pardict)
 		# Here SSR is not normalized by standard dev of residuals but should be
 		# (see example baccam to see what I mean)
 		return numpy.sum( (self.data[:,1] - self.get_solution())**2.0 )
-
-def params_are_valid(pdic):
-	if min(pdic.values()) < 0.0:
-		return False
-	return True

@@ -30,7 +30,7 @@ dat = (dathpi,datV,sigV)
 # Only non-fitted param values of pdic will be retained
 pdic = {'Vlim': 3.1622776601683795, 'nI': 16, 'c': 0.14348164740989799, 'b': 1.5655468237418551e-07, 'N': 400000000.0, 'V0': 56.255837462685221, 'p': 0.0011636160041053807, 'tI': 24.0}
 pfit = ['p','c','b','V0']
-params = phymcmc.ParamStruct(pdic.copy(),pfit)
+params = baccam.params(pdic.copy(),pfit)
 model = baccam.model(dat,params)
 
 # MCMC parameters

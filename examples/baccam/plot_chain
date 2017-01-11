@@ -24,10 +24,11 @@ chainfile = sys.argv[1]
 fname = chainfile.split('chain_')[1].split('.hdf5')[0]
 
 labeldic = {
+	'lnprob': r'ln(Likelihood)',
 	'ssr': r'Sum squared resid, SSR',
-	'V0': r'Inoculum, $V_0$, (TCID$_{50}$/mL)',
-	'b': r'Infectiousness, $\beta$ (mL/TCID$_{50}$/h)',
-	'p': r'Prod.\ rate, $p$ (TCID$_{50}$/mL/h)',
+	'V0': r'Inoculum, $V_0$ $\left(\frac{\mathrm{TCID}_{50}}{\mathrm{mL}}\right)$',
+	'b': r'Infectiousness, $\beta$ $\left(\frac{\mathrm{mL}}{\mathrm{TCID}_{50}\cdot\mathrm{h}}\right)$',
+	'p': r'Prod.\ rate, $p$ $\left(\frac{\mathrm{TCID}_{50}}{\mathrm{mL}\cdot\mathrm{h}}\right)$',
     'c': r'Clearance, $c$ (1/h)',
     'R0': r'Basic repro.\ num., $R_0$',
     'tinf': r'Infecting time, $t_\mathrm{inf}$ (h)',

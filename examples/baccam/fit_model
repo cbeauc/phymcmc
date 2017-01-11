@@ -23,9 +23,15 @@ import phymcmc.fits
 dat = numpy.loadtxt("baccam.dat")
 dathpi = dat[:,0]
 datV = dat[:,1]
+# This should be the standard deviation of the residuals
+#   between your model and data for your best-fit (not yet known)
+#   which is why it's ok as 1.0 for fitting but should be set to
+#   the correct value when running MCMC because the normalized SSR
+#   is required to calculate the likelihood = exp[-ssr/(2*stdev^2)]
+sigV = 1.0
 # Your data
 # (feel free to pack other non-varying arguments in there)
-dat = (dathpi,datV)
+dat = (dathpi,datV,sigV)
 
 pdic = dict(
 	Vlim = 10.0**0.5, # Limit of detection for V
@@ -39,7 +45,7 @@ pdic = dict(
 pfit = ['p','c','b','V0']
 
 # Create params structure
-params = phymcmc.ParamStruct(pdic.copy(),pfit)
+params = baccam.params(pdic.copy(),pfit)
 
 # Grab model instance
 model = baccam.model(dat, params)

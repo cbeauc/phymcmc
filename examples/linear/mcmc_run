@@ -41,7 +41,7 @@ dat = numpy.loadtxt('lin.dat')
 pdic = dict(slope=1.0,yint=1.0)
 pfit = ['slope','yint']
 # Create params structure
-params = phymcmc.ParamStruct(pdic.copy(),pfit)
+params = linmod.params(pdic.copy(),pfit)
 # Grab model instance
 model = linmod.line(dat, params)
 
