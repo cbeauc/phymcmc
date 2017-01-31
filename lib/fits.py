@@ -46,11 +46,11 @@ def scost(pvec, model, maxssr):
 		return maxssr
 	except: # Unknown error
 		print('WARNING: Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.')
-		print('params:', model.params)
+		print('params:', model.params.pardict)
 		return maxssr
 	import math
 	if math.isnan( nssr ):
-		print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(self.par), file=sys.stderr)
+		print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(model.params.pardict), file=sys.stderr)
 		return maxssr
 	return nssr
 
