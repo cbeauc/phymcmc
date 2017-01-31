@@ -26,6 +26,8 @@ import numpy
 import phymcmc.mcmc
 ### plotting STUFF
 import matplotlib
+import matplotlib.style
+matplotlib.style.use('classic')
 from mpl_toolkits.mplot3d import Axes3D
 matplotlib.use('Agg')
 params = {
