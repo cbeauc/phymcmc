@@ -24,6 +24,7 @@
 from __future__ import print_function
 import numpy
 import scipy.optimize
+import sys
 PosInf = float('+inf')
 
 #
