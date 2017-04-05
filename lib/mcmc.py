@@ -78,7 +78,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], threads=1, pool=None, minlnprob=-1e20, verbose=True):
+	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], threads=1, pool=None, verbose=True):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
@@ -91,7 +91,6 @@ class MCSampler( object ):
 		self.linpars = linpars
 		self.threads = threads
 		self.pool = pool
-		self.minlnprob = minlnprob
 		self.verbose = verbose
 
 		# Additional parameters/properties of sampler
@@ -120,7 +119,7 @@ class MCSampler( object ):
 				sys.stdout.flush()
 
 
-	def init_walkers_for_me(self):
+	def init_walkers_for_me(self,minlnprob=1.e20):
 		self.tstart = time.time()
 		# Position all your walkers
 		if self.verbose:
@@ -149,7 +148,7 @@ class MCSampler( object ):
 			# accept or reject the candidate position
 			lprob = lnprobfn(pcandidate,self.model)
 			if not math.isinf(lprob) and not math.isnan(lprob):
-				if (self.minlnprob == 1.e20) or (lprob > self.minlnprob):
+				if (minlnprob == 1.e20) or (lprob > minlnprob):
 					self.curlnprob[wrem] = lprob
 					self.curpos[wrem,:] = pcandidate
 					if self.verbose:
