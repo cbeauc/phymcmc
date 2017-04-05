@@ -15,8 +15,8 @@
 
 # =============================================================================
 
-import sys
 from __future__ import print_function
+import sys
 NegInf = float('-inf')
 
 class ParamStruct(object):
