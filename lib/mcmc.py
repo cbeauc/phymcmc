@@ -343,11 +343,11 @@ def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 	idx = opdic['lnprob'].argmax()
 	pdic = {}
 	for key,val in opdic.items():
-		try:
+		if key in pfit:
 			pdic[key] = val[idx]
-		except TypeError:
+		else:
 			pdic[key] = val
-	pfit = pfit[1:]
+	pfit = list(pfit[1:])
 	if verbose:
 		print('Your best param set (lnprob = %g) was:' % pdic['lnprob'])
 		print(repr(pfit))
