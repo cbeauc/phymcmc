@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2016-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 import numpy
 import phymcmc.mcmc
 import phymcmc.plot
+from phymcmc import emcee
 import subprocess
 import sys
 import tempfile
@@ -94,7 +95,7 @@ def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
 	# and run the requested conversion test method.
 	for idx,key in enumerate(parlist):
 		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
-		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, chainattrs['acor'][:,idx], lin=(key in chainattrs['linpars']) )
+		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
 
 	# Add more overall (not per-parameter) diagnostics (?)
 	# Acceptance fraction
@@ -109,7 +110,7 @@ def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
 	subprocess.call('rm -f %s'% tmpfname, shell=True)
 
 
-def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=False ):
+def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	i = 0
 	N = len(pararray)
 	iters = range(N)
@@ -151,10 +152,19 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, autocorr, lin=F
 	ax.plot(iters,numpy.array(tmp).T)
 	ax.set_yscale( yscale )
 
-	# Integrated autocorrelation time
+	# Integrated autocorrelation time since start
+	#	computed from average pos of all walkers at each step.
+	#	emcee developer suggests a burn-in time of ~ 10x autocor time.
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
 	ax.set_title(r'Integrated autocorr time')
+	autocorr = []
+	for stepn in range(1,N):
+		try:
+			acor = emcee.autocorr.integrated_time(pararray[:stepn,:].mean(axis=1))
+		except emcee.autocorr.AutocorrError:
+			acor = -numpy.ones(pararray.shape[1])
+		autocorr.append( acor )
 	ax.plot(range(N-1),autocorr)
 	ax.set_ylim(bottom=0.0)
 

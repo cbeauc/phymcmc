@@ -68,7 +68,6 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
 	sampler.acceptance_fraction = f['acceptance_fraction'].value
-	sampler.acor = f['autocorr'].value
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = mcchaincopy[idx:,0]
@@ -96,7 +95,6 @@ class MCSampler( object ):
 		# Additional parameters/properties of sampler
 		self.npars = len(self.model.params.parfit)
 		self.acceptance_fraction = []
-		self.acor = []
 
 		# Check for bad values entered
 		assert 0.0 < self.linbw < 1.0, "MCMC parameter linboxwidth must be in (0,1)"
@@ -236,7 +234,6 @@ class MCSampler( object ):
 		# Now walk...
 		poss = []
 		lnprobs = []
-		meanpos = [ numpy.mean(self.curpos,axis=0) ]
 		twrite = time.time()
 		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
 
@@ -247,11 +244,6 @@ class MCSampler( object ):
 			# Average fraction of accepted since start
 			#	averaged over all walkers (ideally in 0.2-0.5 range).
 			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
-			# Integrated autocorrelation time since start
-			#	computed from average pos of all walkers at each step.
-			#	emcee developer suggests a burn-in time of ~ 10x autocor time.
-			meanpos.append(pos.mean(axis=0))
-			self.acor.append(emcee.autocorr.integrated_time(numpy.array(meanpos)))
 
 			# Print to file every once in a while
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
@@ -269,10 +261,6 @@ class MCSampler( object ):
 				if 'acceptance_fraction' in f:
 					del f['acceptance_fraction']
 				f.create_dataset('acceptance_fraction', data=numpy.array(self.acceptance_fraction))
-				# If autocorr already exists, delete it before proceeding
-				if 'autocorr' in f:
-					del f['autocorr']
-				f.create_dataset('autocorr', data=numpy.array(self.acor))
 				# All done updating hdf5 file
 				f.close()
 				if self.verbose:
@@ -296,7 +284,6 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	chainattrs = {}
 	chainattrs['parfit'] = mcchain.attrs['parfit']
 	chainattrs['acceptance_fraction'] = f['acceptance_fraction'].value
-	chainattrs['acor'] = f['autocorr'].value
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
@@ -321,7 +308,6 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	idx = numpy.arange(chainattrs['nburn']*chainattrs['nwalkers'],chainattrs['filledlength'])
 	# Slice through the two array attributes based on nburn
 	chainattrs['acceptance_fraction'] = chainattrs['acceptance_fraction'][nburn:]
-	chainattrs['acor'] = chainattrs['acor'][nburn:,:]
 	max_lnprob_row = mcchaincopy[:chainattrs['filledlength'],0].argmax()
 	if max_lnprob_row not in idx:
 		print('WARNING: Your max lnprob was discarded when the burn-in was applied.')
