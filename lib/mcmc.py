@@ -191,13 +191,13 @@ class MCSampler( object ):
 		# Make sure the # walkers and # params in curpos array match request
 		assert self.nwalkers == curpos.shape[0], 'The number of walkers (lines) in curpos (%d) does not match nwalkers requested (%d).' % (len(curpos),self.nwalkers)
 		assert self.npars == curpos.shape[1], 'The number of parametres in curpos (%d) does not match npars in params (%d).' % (curpos.shape[1],self.npars)
-		self.curpos = curpos # accept positions provided
+		self.curpos = curpos.copy() # accept positions provided
 		# Check if lnprob given, create if not provided
 		if lnprob is None:
 			self.create_curlnprob( self.curpos )
 		else: # if given, check if correct size
 			assert self.nwalkers == len(lnprob), 'The number of walkers (lines) in lnprob (%d) does not match nwalkers requested (%d).' % (len(lnprob),self.nwalkers)
-			self.curlnprob = lnprob
+			self.curlnprob = numpy.array( lnprob )
 
 
 	def init_chainfile(self):
