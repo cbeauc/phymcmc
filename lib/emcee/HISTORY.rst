@@ -1,7 +1,15 @@
 .. :changelog:
 
-2.1.0 (upcoming)
-++++++++++++++++
+2.2.0 (2016-07-12)
+++++++++++++++++++
+
+- Improved autocorrelation time computation.
+- Numpy compatibility issues.
+- Fixed deprecated integer division behavior in PTSampler.
+
+
+2.1.0 (2014-05-22)
+++++++++++++++++++
 
 - Removing dependence on ``acor`` extension.
 - Added arguments to ``PTSampler`` function.
