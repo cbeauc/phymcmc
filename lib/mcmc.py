@@ -39,7 +39,7 @@ import time
 #
 
 
-def lnprobfn(pvec,model,*args,**kwargs):
+def lnprobfn(pvec,model):
 	return model.get_lnprob(pvec)
 
 
@@ -59,8 +59,6 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 		nsteps = mcchain.attrs['nsteps'],
 		linpars = mcchain.attrs['linpars'],
 		stepsize = mcchain.attrs['stepsize'],
-		linbw = mcchain.attrs['linbw'],
-		logbw = mcchain.attrs['linbw'],
 		threads = threads,
 		pool = pool,
 		verbose = verbose
@@ -77,7 +75,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linbw=0.5, logbw=1.0, linpars=[], threads=1, pool=None, verbose=True):
+	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linpars=[], live_dangerously=False, threads=1, pool=None, verbose=True):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
@@ -85,8 +83,6 @@ class MCSampler( object ):
 		self.nsteps = nsteps
 		# Optional arguments
 		self.stepsize = stepsize
-		self.linbw = linbw
-		self.logbw = logbw
 		self.linpars = linpars
 		self.threads = threads
 		self.pool = pool
@@ -96,11 +92,8 @@ class MCSampler( object ):
 		self.npars = len(self.model.params.parfit)
 		self.acceptance_fraction = []
 
-		# Check for bad values entered
-		assert 0.0 < self.linbw < 1.0, "MCMC parameter linboxwidth must be in (0,1)"
-
 		# Acquire the emcee sampler
-		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=(self.model,[]), threads=self.threads, pool=self.pool)
+		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=[self.model], threads=self.threads, pool=self.pool, live_dangerously=live_dangerously)
 
 
 	def create_curlnprob(self, curpos):
@@ -117,33 +110,36 @@ class MCSampler( object ):
 				sys.stdout.flush()
 
 
-	def init_walkers_for_me(self,minlnprob=1.e20):
+	def init_walkers_for_me(self, linbw=0.5, logbw=1.0, minlnprob=1.e20):
 		self.tstart = time.time()
+		# Check for bad values entered
+		assert 0.0 < linbw < 1.0, "ERROR: Walker initialization parameter linbw providing the width of the linear box must be in (0,1)"
 		# Position all your walkers
 		if self.verbose:
 			print('Positioning the walkers randomly-uniformly for you')
-		# initial position array has dimensions (nwalker, nparams)
+			sys.stdout.flush()
+		# Initial position array has dimensions (nwalker, nparams)
 		self.curpos = numpy.zeros( (self.nwalkers, self.npars) )
 		self.curlnprob = numpy.zeros( self.nwalkers )
-		# walker 0 gets started at the best fit position (centre)
+		# Walker 0 gets started at the best fit position (centre)
 		self.curpos[0,:] = self.model.params.vector
 		self.curlnprob[0] = lnprobfn(self.model.params.vector,self.model)
 		if self.verbose:
 			print('# Accepted walker: 0 (lnprob=%g)' % self.curlnprob[0])
 			print( ('%g '*self.npars) % tuple(self.model.params.vector) )
 			sys.stdout.flush()
-		# remaining walkers are distributed randomly, uniformly (lin or log)
+		# Remaining walkers are distributed randomly, uniformly (lin or log)
 		wrem = self.nwalkers-1
 		bfcentrevec = numpy.array(self.model.params.vector)
 		while wrem:
-			# generate a candidate position for a walker
+			# Generate a candidate position for a walker
 			pcandidate = bfcentrevec.copy()
 			for pi,pname in enumerate(self.model.params.parfit):
 				if pname in self.linpars:
-					pcandidate[pi] *= random.uniform(1.0-self.linbw,1.0+self.linbw)
+					pcandidate[pi] *= random.uniform(1.0-linbw,1.0+linbw)
 				else:
-					pcandidate[pi] *= 10.0**random.uniform(-self.logbw,self.logbw)
-			# accept or reject the candidate position
+					pcandidate[pi] *= 10.0**random.uniform(-logbw,logbw)
+			# Accept or reject the candidate position
 			lprob = lnprobfn(pcandidate,self.model)
 			if not math.isinf(lprob) and not math.isnan(lprob):
 				if (minlnprob == 1.e20) or (lprob > minlnprob):
@@ -160,6 +156,7 @@ class MCSampler( object ):
 		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
+			sys.stdout.flush()
 		f = h5py.File(oldchainfile, 'r')
 		mcchain = f['mcchain']
 		mcchaincopy = mcchain.value
@@ -187,7 +184,8 @@ class MCSampler( object ):
 		"""
 		self.tstart = time.time()
 		if self.verbose:
-			print('Reading walkers initial pos from arrays')
+			print('Reading walkers initial position from array...')
+			sys.stdout.flush()
 		# Make sure the # walkers and # params in curpos array match request
 		assert self.nwalkers == curpos.shape[0], 'The number of walkers (lines) in curpos (%d) does not match nwalkers requested (%d).' % (len(curpos),self.nwalkers)
 		assert self.npars == curpos.shape[1], 'The number of parametres in curpos (%d) does not match npars in params (%d).' % (curpos.shape[1],self.npars)
@@ -198,6 +196,12 @@ class MCSampler( object ):
 		else: # if given, check if correct size
 			assert self.nwalkers == len(lnprob), 'The number of walkers (lines) in lnprob (%d) does not match nwalkers requested (%d).' % (len(lnprob),self.nwalkers)
 			self.curlnprob = numpy.array( lnprob )
+			# Print walkers initial position for user (if verbose)
+			if self.verbose:
+				for idx,(lprob,pos) in enumerate(zip(lnprob,curpos)):
+					print('# Accepted walker: %d (lnprob=%g)' % (idx,lprob))
+					print( ('%g '*self.npars) % tuple(pos) )
+					sys.stdout.flush()
 
 
 	def init_chainfile(self):
@@ -213,8 +217,6 @@ class MCSampler( object ):
 		fchain.attrs['nwalkers'] = self.nwalkers
 		fchain.attrs['nsteps'] = self.nsteps
 		fchain.attrs['stepsize'] = self.stepsize
-		fchain.attrs['linbw'] = self.linbw
-		fchain.attrs['logbw'] = self.logbw
 		fchain.attrs['linpars'] = self.linpars
 		# Store the walker's original position into the chain file
 		nl = self.nwalkers
@@ -224,6 +226,8 @@ class MCSampler( object ):
 		f.close()
 		if self.verbose:
 			print('Initialization took %g min\n' % ((time.time()-self.tstart)/60.0))
+			sys.stdout.flush()
+
 
 	def run_mcmc(self, chunk_size=30000):
 		self.init_chainfile()
@@ -235,11 +239,11 @@ class MCSampler( object ):
 		poss = []
 		lnprobs = []
 		twrite = time.time()
-		for nstp, (pos, lnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
+		for nstp, (nwpos, nwlnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
 
 			# Store current pos + lnprob of each walker
-			poss.append(pos.copy())
-			lnprobs.append(lnprob.copy())
+			poss.append(nwpos.copy())
+			lnprobs.append(nwlnprob.copy())
 
 			# Average fraction of accepted since start
 			#	averaged over all walkers (ideally in 0.2-0.5 range).
@@ -249,6 +253,7 @@ class MCSampler( object ):
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
 				if self.verbose:
 					print('   accepting %d params took %g min' % (len(lnprobs)*self.nwalkers,(time.time()-twrite)/60.0))
+					sys.stdout.flush()
 					self.tstart = time.time()
 				lnprobs = numpy.array(lnprobs).flatten()
 				nl = len(lnprobs)
@@ -288,8 +293,6 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
 	chainattrs['stepsize'] = mcchain.attrs['stepsize']
-	chainattrs['linbw'] = mcchain.attrs['linbw']
-	chainattrs['logbw'] = mcchain.attrs['logbw']
 	chainattrs['linpars'] = mcchain.attrs['linpars']
 	# If parameters derived/calculated from the chain are in there
 	# get them out as well.
