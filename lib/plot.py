@@ -100,6 +100,56 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 	return fig
 
 
+def square( plotkeys, chainfile, color='b', nbins=20, reset=True, gridfig=None, labels=None, linpars=[], nburn=0 ):
+	Npars = len(plotkeys)
+	if reset:
+		gridfig = grid_plot((Npars,Npars))
+	else:
+		assert gridfig is not None, "If reset is False, you must provide a gridfig."
+
+	if labels is None:
+		labels = plotkeys
+
+	# For each chain file
+	pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( chainfile, nburn=nburn )
+	if linpars is None:
+		clinpars = chainattrs['linpars']
+	else:
+		clinpars = linpars
+	# Deciding index binning
+	splitidxs = numpy.array_split(numpy.arange(len(pdic['lnprob'])),nbins)
+	pid = -1
+	for xkey,xlab in zip(plotkeys,labels):
+		sortidxs = numpy.argsort(pdic[xkey])
+		xvals = pdic[xkey][sortidxs]
+		likeli = pdic['lnprob'][sortidxs]
+		for ykey,ylab in zip(plotkeys,labels):
+			pid +=1
+			if xkey == ykey:
+				continue
+			yvals = pdic[ykey][sortidxs]
+			# Compile best-fit pair for each block of values
+			coords = []
+			for splitidx in splitidxs:
+				bfidx = numpy.argmax( likeli[splitidx] )
+				coords.append([xvals[splitidx][bfidx],yvals[splitidx][bfidx]])
+			coords = numpy.array(coords)
+			# Plot the coords
+			if reset:
+				ax = gridfig.subaxes(pid)
+			else:
+				ax = gridfig.fig.axes[pid]
+			ax.plot(coords[:,0],coords[:,1],'o',color=color)
+			if reset:
+				ax.set_xlabel(xlab)
+				ax.set_ylabel(ylab)
+				if xkey not in clinpars:
+					ax.set_xscale('log')
+				if ykey not in clinpars:
+					ax.set_yscale('log')
+	return gridfig
+
+
 def choose_bins(x, nbins, linear=False):
 	# FIXME: percentile will change based on weights but not accouted for!!!
 	if linear:
