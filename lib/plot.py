@@ -260,3 +260,159 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 		ax.set_xlabel(labels[i])
 		ax.set_ylim(0, 1.1*nmax)
 	return gridfig
+
+
+def brooksgelman( par ):
+	""" This function implements the Brooks-Gelman method for evaluating
+		the convergence of an MCMC chain. Argument "par" is an array of
+		dimensions (nrow,ncols) = (nsteps,nwalker) for one parameter. """
+
+	# In the Brooks and Gelman paper, the variables are as follows
+	# m = # chains or walkers
+	# n = # of steps or iterations (after applying the burn-in)
+	# psi_j,t = value of param at iteration t of n for chain/walker j of m
+	bgstats = {}
+
+	# Param array dimensions (n,m)
+	(nsteps,nwalkers) = par.shape
+	parcumsum = par.cumsum(axis=0)
+	divi = numpy.resize(numpy.arange(nsteps)+1.0,(nwalkers,nsteps)).T
+
+	# Between-chain variance
+	# B/n = 1/(m-1) sum_{j=1}^m ( mean(psi_j,all-t) - mean(psi_all-j,all-t) )^2
+	BoverN = numpy.var( parcumsum/divi, axis=1, ddof=1 )[1:]
+
+	# Within-chain variance
+	# W = 1/[m(n-1)] sum_{j=1}^m sum_{t=1}^n [ psi_j,t - mean(psi_j,all-t) ]^2
+	bgstats['W'] = numpy.sum((numpy.cumsum(par**2.0,axis=0)-parcumsum**2.0/divi)[1:,:]/(divi[1:,:]-1.0),axis=1)/nwalkers
+
+	# Pooled posterior variance estimate
+	# Vhat = (n-1)/n W + B/n + B/(m*n) = (n-1)/n W + (1+1/m) B
+	bgstats['Vhat'] = (divi[1:,0]-1.0)/divi[1:,0] * bgstats['W'] + (1.0+1.0/nwalkers) * BoverN
+
+	# (over-)estimated variance ratio of pooled/within-chain inferences
+	#	aka potential scale reduction factor (PSRF)
+	#	Should ideally be close to one for convergence
+	bgstats['Rhat'] = bgstats['Vhat']/bgstats['W']
+	return bgstats
+
+
+def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
+	i = 0
+	N = len(pararray)
+	iters = range(N)
+	if lin:
+		yscale = 'linear'
+	else:
+		yscale = 'log'
+
+	# Percentiles
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.set_title(r'Median, 1$\sigma$, $2\sigma$')
+	ax.set_ylabel(key.replace('_','\_'))
+	ax.set_yscale( yscale )
+	tmp = numpy.percentile(pararray,[50.0,15.87,84.13,2.275,97.72],axis=1)
+	ax.plot(iters, tmp[0], 'r-', label='median')
+	ax.plot(iters, tmp[1], 'b-', iters, tmp[2], 'b-', label=r'$1\sigma$')
+	ax.plot(iters, tmp[3], 'k-', iters, tmp[4], 'k-', label=r'$2\sigma$')
+
+	# Actual chain
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.plot(iters,pararray)
+	ax.set_title('raw walks')
+	ax.set_yscale( yscale )
+
+	# Running mean
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.set_title('cumm mean')
+	tmp = []
+	if lin:
+		for chn in pararray.T:
+			tmp.append( numpy.cumsum(chn)/(numpy.arange(N)+1) )
+	else:
+		for chn in pararray.T:
+			tmp.append( 10.0**(numpy.cumsum(numpy.log10(chn))/(numpy.arange(N)+1)) )
+
+	ax.plot(iters,numpy.array(tmp).T)
+	ax.set_yscale( yscale )
+
+	# Integrated autocorrelation time since start
+	#	computed from average pos of all walkers at each step.
+	#	emcee developer suggests a burn-in time of ~ 10x autocor time.
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.set_title(r'Integrated autocorr time')
+	if False:
+		from .emcee import autocorr as dfmautocorr
+		autocorr = []
+		for stepn in range(1,N):
+			try:
+				acor = dfmautocorr.integrated_time(pararray[:stepn,:].mean(axis=1))
+			except dfmautocorr.AutocorrError:
+				acor = -numpy.ones(pararray.shape[1])
+			autocorr.append( acor )
+		ax.plot(range(N-1),autocorr)
+		ax.set_ylim(bottom=0.0)
+
+	# Brooks-Gelman
+	dis = 1
+	bgstats = brooksgelman( pararray[dis-1:,:] )
+	title = 'Brooks-Gelman'
+	# W along Vhat
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.plot(iters[dis:],numpy.sqrt(bgstats['W']),label='W')
+	ax.plot(iters[dis:],numpy.sqrt(bgstats['Vhat']),label=r'$\hat{V}$')
+	ax.set_xlim(iters[dis],iters[-1])
+	ax.legend(loc='best')
+	ax.set_title( title )
+	# Rhat (uncorrected)
+	ax = gridfig.subaxes(baseidx+i)
+	i += 1
+	ax.plot(iters[dis:],numpy.sqrt(bgstats['Rhat']),label=r'$\hat{R}$')
+	ax.plot([1,iters[-1]],[1,1],'k-')
+	ax.set_ylim(0.9,max(numpy.sqrt(bgstats['Rhat'][len(bgstats['W'])/4]),1.5))
+	ax.set_xlim(iters[dis],iters[-1])
+	ax.legend(loc='best')
+	ax.set_title( title )
+
+
+def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
+	# Get the chain first
+	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=nburn)
+
+	# Construct parlist from chain if none provided
+	if parlist is None:
+		parlist = chainattrs['parfit'][1:] # don't include SSR
+
+	# Check if reshaping the parameter arrays will restitute the chains
+	# correctly (rather than accidentally spread chains across columns).
+	remainder = chainattrs['filledlength'] % chainattrs['nwalkers']
+	assert remainder == 0.0, 'Error: your chain could not be reshaped into (nsteps,nwalkers). There are %d samples too many.' % remainder
+
+	# Now get ready for the plot of all plots
+	ndiags = 6
+	gridfig = grid_plot((len(parlist)+1,ndiags))
+
+	# Construct the (nsteps,nwalkers) array for each parameter
+	# and run the requested conversion test method.
+	for idx,key in enumerate(parlist):
+		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
+		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
+
+	# Add more overall (not per-parameter) diagnostics (?)
+	# Acceptance fraction
+	ax = gridfig.subaxes(len(parlist)*ndiags)
+	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
+	ax.set_title(r'acceptance fraction')
+
+	# Saving the figure
+	import tempfile
+	import subprocess
+	_,tmpfname = tempfile.mkstemp(suffix='.png')
+	gridfig.fig.savefig(tmpfname, bbox_inches='tight')
+	subprocess.call('convert %s %s.pdf'% (tmpfname,savefile), shell=True)
+	subprocess.call('rm -f %s'% tmpfname, shell=True)
