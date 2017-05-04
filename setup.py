@@ -28,9 +28,9 @@ setup(
 		'phymcmc.emcee'
 	],
 	scripts = [
-		'bin/phymcmc_diagnostics',
 		'bin/phymcmc_fix_fracaccept',
 		'bin/phymcmc_parstats',
+		'bin/phymcmc_plotter',
 		'bin/phymcmc_rmderived'
 	],
 	package_dir = {'phymcmc':'lib'}
