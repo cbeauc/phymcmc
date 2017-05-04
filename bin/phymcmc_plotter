@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2016-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,7 +13,6 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #
 # =============================================================================
 #
@@ -21,9 +20,41 @@
 #
 # =============================================================================
 #
-
+import argparse
 import phymcmc.plot
-import sys
+
+#
+# =============================================================================
+#
+#                                   Utilities
+#
+# =============================================================================
+#
+
+def parse_args():
+	parser = argparse.ArgumentParser(description='Produce plots from phymcmc hdf5 chainfiles.')
+
+	# Required arguments
+	parser.add_argument('chainfile',
+		help='name of hdf5 chainfile to plot')
+	parser.add_argument('savedirectory',
+		help='path to directory where graph(s) should be saved')
+
+	# Optional arguments
+	parser.add_argument('-n','--nburn', type=int, default=0,
+		help='number of burn-in steps (excluded from graphs)')
+	parser.add_argument('-t','--type', default='all',
+		help='type of plot (diag, hist, triangle, square, all). E.g. -t diag,hist')
+
+	# Parsing arguments
+	args = parser.parse_args()
+	# Path + basename for plot(s)
+	savename = args.chainfile.split('/')[-1].split('.hdf5')[0]
+	savename = args.savedirectory + '/' + savename
+	# Parse types of plots requested
+	plotsrequested = args.type.split(',')
+	return args, savename, plotsrequested
+
 
 #
 # =============================================================================
@@ -33,15 +64,8 @@ import sys
 # =============================================================================
 #
 
-nburn = 0
-bid = 1
-if sys.argv[bid][:2] == '-n':
-	if len(sys.argv[bid]) > 2:
-		nburn = int(float(sys.argv[bid][2:]))
-		bid += 1
-	else:
-		nburn = int(float(sys.argv[bid+1][2:]))
-		bid += 2
-chainfile = sys.argv[bid]
-savefile = sys.argv[bid+1].split('.pdf')[0]
-phymcmc.plot.diagnostics( chainfile, savefile, nburn=nburn )
+args, savename, plotsrequested = parse_args()
+print 'Will now plot for you:', plotsrequested
+
+if 'diag' in plotsrequested or 'all' in plotsrequested:
+	phymcmc.plot.diagnostics( args.chainfile, savename+'_diag.pdf', nburn=args.nburn )
