@@ -52,7 +52,7 @@ def parse_args():
 	savename = args.chainfile.split('/')[-1].split('.hdf5')[0]
 	savename = args.savedirectory + '/' + savename
 	# Parse types of plots requested
-	plotsrequested = args.type.split(',')
+	plotsrequested = set(args.type.split(','))
 	return args, savename, plotsrequested
 
 
@@ -67,5 +67,22 @@ def parse_args():
 args, savename, plotsrequested = parse_args()
 print 'Will now plot for you:', plotsrequested
 
-if 'diag' in plotsrequested or 'all' in plotsrequested:
-	phymcmc.plot.diagnostics( args.chainfile, savename+'_diag.pdf', nburn=args.nburn )
+if {'diag','all'} & plotsrequested:
+	phymcmc.plot.diagnostics( args.chainfile, savename, nburn=args.nburn )
+
+if {'hist','all'} & plotsrequested:
+	gridfig = phymcmc.plot.hist_grid( [args.chainfile], nburn=args.nburn )
+	gridfig.fig.savefig(savename+'_hist.pdf', bbox_inches='tight')
+
+if {'triangle','all'} & plotsrequested:
+	import tempfile
+	import subprocess
+	fig = phymcmc.plot.triangle( args.chainfile, nburn=args.nburn )
+	_,tmpfname = tempfile.mkstemp(suffix='.png')
+	fig.savefig(tmpfname, bbox_inches='tight')
+	subprocess.call('convert %s %s_triangle.pdf'% (tmpfname,savename), shell=True)
+	subprocess.call('rm -f %s'% tmpfname, shell=True)
+
+if {'square','all'} & plotsrequested:
+	gridfig = phymcmc.plot.square( args.chainfile, nburn=args.nburn )
+	gridfig.fig.savefig(savename+'_square.pdf', bbox_inches='tight')

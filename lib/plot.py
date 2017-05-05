@@ -66,11 +66,16 @@ class grid_plot(object):
 		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw), *args, **kwargs)
 
 
-def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=None ):
+def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weights=None ):
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain( chain_file, nburn=nburn )
+	if parlist is None:
+		parlist = chainattrs['parfit']
+	if labels is None:
+		labels = list(parlist)
+	else:
+		labels = labels[:]
 	if linpars is None:
 		linpars = chainattrs['linpars']
-	labels = rawlabels[:]
 	# Data
 	data = []
 	# Best-fit values
@@ -81,9 +86,14 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 	for i,p in enumerate(parlist):
 		if p in linpars:
 			data.append( pardict[p] )
+			if '_' in labels[i]:
+				labels[i] = r'\verb|%s|' % labels[i]
 		else:
 			data.append( numpy.log10( pardict[p] ) )
-			labels[i] = r'log$_{10}$ '+labels[i]
+			if '_' in labels[i]:
+				labels[i] = r'log$_{10}$ \verb|%s|' % labels[i]
+			else:
+				labels[i] = r'log$_{10}$ %s' % labels[i]
 		truths.append( data[-1][imaxlnprob] )
 	data = numpy.vstack( data ).T
 	from .emcee import corner as dfmtriangle
@@ -100,30 +110,28 @@ def triangle( parlist, rawlabels, chain_file, nburn=0, linpars=None, weights=Non
 	return fig
 
 
-def square( plotkeys, chainfile, color='b', nbins=20, reset=True, gridfig=None, labels=None, linpars=[], nburn=0 ):
-	Npars = len(plotkeys)
+def square( chainfile, parlist=None, labels=None, color='b', nbins=20, reset=True, gridfig=None, linpars=None, nburn=0 ):
+	# Load chain
+	pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( chainfile, nburn=nburn )
+	if parlist is None:
+		parlist = chainattrs['parfit']
+	Npars = len(parlist)
 	if reset:
 		gridfig = grid_plot((Npars,Npars))
 	else:
 		assert gridfig is not None, "If reset is False, you must provide a gridfig."
-
 	if labels is None:
-		labels = plotkeys
-
-	# For each chain file
-	pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( chainfile, nburn=nburn )
+		labels = parlist
 	if linpars is None:
-		clinpars = chainattrs['linpars']
-	else:
-		clinpars = linpars
+		linpars = chainattrs['linpars']
 	# Deciding index binning
 	splitidxs = numpy.array_split(numpy.arange(len(pdic['lnprob'])),nbins)
 	pid = -1
-	for xkey,xlab in zip(plotkeys,labels):
+	for xkey,xlab in zip(parlist,labels):
 		sortidxs = numpy.argsort(pdic[xkey])
 		xvals = pdic[xkey][sortidxs]
 		likeli = pdic['lnprob'][sortidxs]
-		for ykey,ylab in zip(plotkeys,labels):
+		for ykey,ylab in zip(parlist,labels):
 			pid +=1
 			if xkey == ykey:
 				continue
@@ -143,9 +151,9 @@ def square( plotkeys, chainfile, color='b', nbins=20, reset=True, gridfig=None, 
 			if reset:
 				ax.set_xlabel(xlab)
 				ax.set_ylabel(ylab)
-				if xkey not in clinpars:
+				if xkey not in linpars:
 					ax.set_xscale('log')
-				if ykey not in clinpars:
+				if ykey not in linpars:
 					ax.set_yscale('log')
 	return gridfig
 
@@ -209,38 +217,46 @@ def lalhist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'
 	return pdf.array.max()
 
 
-def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, scaling='normalized', hist=hist ):
+def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, scaling='normalized', hist=hist ):
+
+	# Load first chainfile to have a peak at content
+	pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( chainfiles[0], nburn=nburn )
+	# Decide on parlist if not given
+	if parlist is None:
+		parlist = chainattrs['parfit']
 	# Set the arrangement/dimensions of the hist grid
 	if dims is None:
-		gh = int(math.floor(math.sqrt(len(keys)/1.618)))
-		gw = int(math.ceil(1.0*len(keys)/gh))
+		gh = int(math.floor(math.sqrt(len(parlist)/1.618)))
+		gw = int(math.ceil(1.0*len(parlist)/gh))
 	else:
 		(gh,gw) = dims
-		assert len(keys) <= (gw*gh), "Grid dimensions %s cannot fit keys (%d)" % (repr(dims),len(keys))
-
-	if labels is None:
-		labels = keys
-
+		assert len(parlist) <= (gw*gh), "Grid dimensions %s cannot fit parlist (%d)" % (repr(dims),len(parlist))
 	# Setup the figure looking nice
 	gridfig = grid_plot((gh,gw))
+	# Set labels
+	if labels is None:
+		labels = parlist
+	# Set colour iteration
+	if colors is None:
+		colors = ['blue','red','green','black','gold'][:len(parlist)]
 
 	# Load the parameters of each chain file
-	pardicts = dict((key, []) for key in keys)
-	bestfits = dict((key, []) for key in keys)
+	pardicts = dict((key, []) for key in parlist)
+	bestfits = dict((key, []) for key in parlist)
 	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
-		pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( cf, nburn=nburn )
-		if linpars is None:
-			clinpars = chainattrs['linpars']
-		else:
-			clinpars = linpars
-		clen = min( clen, len(pdic[keys[0]]) )
-		for key in keys:
+		if i: # If this is not the first chainfile
+			pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( cf, nburn=nburn )
+		else: # If it is the first chainfile
+			if linpars is None:
+				linpars = chainattrs['linpars']
+		clen = min( clen, len(pdic[parlist[0]]) )
+		for key in parlist:
 			pardicts[key].append( pdic[key] )
 			bestfits[key].append( numpy.median( pdic[key] ) )
 
 	# Now start plotting each histogram
-	for i,key in enumerate(keys):
+	for i,key in enumerate(parlist):
 		ax = gridfig.subaxes(i)
 		nmax = 0.0
 		for cfn in range(len(chainfiles)):
@@ -254,7 +270,7 @@ def hist_grid( keys, chainfiles, colors, dims=None, labels=None, bins=50, relati
 				x = pardicts[key][cfn]
 			if type(x) is float: # if x is not an array, don't plot
 				continue
-			n = hist(ax, x, bins=bins, linear=(key in clinpars), scaling=scaling, weights=weights, color=colors[cfn])
+			n = hist(ax, x, bins=bins, linear=(key in linpars), scaling=scaling, weights=weights, color=colors[cfn])
 			nmax = max(n,nmax)
 
 		ax.set_xlabel(labels[i])
@@ -414,5 +430,5 @@ def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
 	import subprocess
 	_,tmpfname = tempfile.mkstemp(suffix='.png')
 	gridfig.fig.savefig(tmpfname, bbox_inches='tight')
-	subprocess.call('convert %s %s.pdf'% (tmpfname,savefile), shell=True)
+	subprocess.call('convert %s %s_diag.pdf'% (tmpfname,savefile), shell=True)
 	subprocess.call('rm -f %s'% tmpfname, shell=True)
