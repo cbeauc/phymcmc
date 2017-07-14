@@ -279,7 +279,7 @@ class MCSampler( object ):
 			print('The complete MCMC run took %g h. Enjoy!' % ((time.time()-trunstart)/3600.0))
 
 
-def load_mcmc_chain( chain_file, nburn=0 ):
+def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	f = h5py.File( chain_file, "r" )
 	mcchain = f['mcchain']
 	# Copy over only the non-zero, filled part of array
@@ -312,18 +312,25 @@ def load_mcmc_chain( chain_file, nburn=0 ):
 	# Slice through the two array attributes based on nburn
 	chainattrs['acceptance_fraction'] = chainattrs['acceptance_fraction'][nburn:]
 	max_lnprob_row = mcchaincopy[:chainattrs['filledlength'],0].argmax()
-	if max_lnprob_row not in idx:
+	if verbose and (max_lnprob_row not in idx):
 		print('WARNING: Your max lnprob was discarded when the burn-in was applied.')
 	# And now make my dictionary of parameters
-	for pi,pn in enumerate(chainattrs['parfit']):
-		pardict[pn] = mcchaincopy[idx,pi]
-	# Add the derived parameters to the dictionary if they exist
-	if derivedchain is not False:
-		for pi,pn in enumerate(derivedparlist):
-			pardict[pn] = derivedchain[idx,pi]
-	# Tell people about what you got for them ;)
-	print('Your chain contained %d accepted parameters.' % len(pardict['lnprob']))
-	return pardict, chainattrs
+	if asdict:
+		for pi,pn in enumerate(chainattrs['parfit']):
+			pardict[pn] = mcchaincopy[idx,pi]
+		# Add the derived parameters to the dictionary if they exist
+		if derivedchain is not False:
+			for pi,pn in enumerate(derivedparlist):
+				pardict[pn] = derivedchain[idx,pi]
+		# Tell people about what you got for them ;)
+		if verbose:
+			print('Your chain contained %d accepted parameters.' % len(pardict['lnprob']))
+		return pardict, chainattrs
+	else:
+		chainattrs['pardict'] = pardict
+		if derivedchain is not False:
+			return numpy.hstack((mcchaincopy[idx,:],derivedchain[idx,:])), chainattrs
+	return mcchaincopy[idx,:], chainattrs 
 
 
 def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):

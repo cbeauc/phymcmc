@@ -135,7 +135,7 @@ def bayes_diff_pvalue( dist, verbose=False ):
 # - median and confidence interval (CI) - bayes=False
 # and returns a dictionary where the keys are the parameters and the
 # values are tuples with (mode,lower-bound,upper-bound).
-def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 ):
+def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=True, nburn=0 ):
 
 	# Check if you've got one or more chains
 	if isinstance(chainfiles, str):
@@ -144,18 +144,19 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 )
 	pardics = []
 	# Now evaluate each chain individually
 	for chainfile in chainfiles:
-		pdic,attrs = phymcmc.mcmc.load_mcmc_chain(chainfile,nburn)
+		pdic,attrs = phymcmc.mcmc.load_mcmc_chain(chainfile,nburn,verbose=verbose)
 
 		# Establish a parlist
 		if parlist is None:
 			parlist = list(attrs['parfit'])
 			for key,value in pdic.items():
 				try:
-					len(value)
+					len(value) # eliminate non-lists
 				except TypeError:
 					continue
-				if key not in parlist:
-					parlist.append( key )
+				if len(value) == len(pdic['lnprob']):
+					if key not in parlist:
+						parlist.append( key )
 		if linpars is None:
 			linpars = attrs['linpars']
 
