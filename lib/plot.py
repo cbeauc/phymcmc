@@ -242,7 +242,6 @@ def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bi
 
 	# Load the parameters of each chain file
 	pardicts = dict((key, []) for key in parlist)
-	bestfits = dict((key, []) for key in parlist)
 	clen = 1.0e30
 	for i,cf in enumerate(chainfiles):
 		if i: # If this is not the first chainfile
@@ -252,8 +251,10 @@ def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bi
 				linpars = chainattrs['linpars']
 		clen = min( clen, len(pdic[parlist[0]]) )
 		for key in parlist:
-			pardicts[key].append( pdic[key] )
-			bestfits[key].append( numpy.median( pdic[key] ) )
+			if key in pdic.keys():
+				pardicts[key].append( pdic[key] )
+			else: # if key exists in one chain but not in another
+				pardicts[key].append( 0.0 )
 
 	# Now start plotting each histogram
 	for i,key in enumerate(parlist):
