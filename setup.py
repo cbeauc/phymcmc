@@ -30,6 +30,7 @@ setup(
 	scripts = [
 		'bin/phymcmc_fix_fracaccept',
 		'bin/phymcmc_parstats',
+		'bin/phymcmc_peakachain',
 		'bin/phymcmc_plotter',
 		'bin/phymcmc_rmderived'
 	],

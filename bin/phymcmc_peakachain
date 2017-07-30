@@ -1,0 +1,81 @@
+#!/usr/bin/python
+# Copyright (C) 2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# =============================================================================
+#
+#                                   Preamble
+#
+# =============================================================================
+#
+import argparse
+import phymcmc.mcmc
+import sys
+
+#
+# =============================================================================
+#
+#                                   Utilities
+#
+# =============================================================================
+#
+
+def parse_args():
+	parser = argparse.ArgumentParser(description='Peak at the contents of hdf5 chainfiles.')
+
+	# Required arguments
+	parser.add_argument('chainfile',
+		help='name of hdf5 chainfile to explore')
+
+	# Optional arguments
+	parser.add_argument('-n','--nburn', type=int, default=0,
+		help='number of burn-in steps (excluded from results)')
+	parser.add_argument('-p','--params', default=False,
+		help='name of parameter(s) to output. E.g. -p tinf,tauE')
+	parser.add_argument('-b','--best', action='store_true',
+		help='prints a dictionary of the best fit')
+	parser.add_argument('-o','--output', default=sys.stdout,
+		help='filename to save the results (default=stdout)')
+
+	# Parsing arguments
+	args = parser.parse_args()
+	# Parse types of plots requested
+	if args.params is not False:
+		parsrequested = args.params.split(',')
+	else:
+		parsrequested = []
+	return args, parsrequested
+
+
+#
+# =============================================================================
+#
+#                                   Main
+#
+# =============================================================================
+#
+
+args, parsrequested = parse_args()
+
+if len(parsrequested):
+	msg = 'phymcmc_peakachain output for file %s\n' % args.chainfile
+	msg += 'nburn = %d, params_req = %s\n' % (args.nburn,repr(parsrequested))
+	res,_ = phymcmc.mcmc.load_mcmc_chain( args.chainfile, nburn=args.nburn, asdict=True, verbose=False )
+	import numpy
+	res = numpy.vstack([res[par] for par in parsrequested]).T
+	numpy.savetxt(args.output, res, header=msg)
+
+if args.best:
+	phymcmc.mcmc.load_mcmc_bestfit( args.chainfile, nburn=args.nburn, verbose=True )
