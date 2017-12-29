@@ -45,7 +45,7 @@ class model(phymcmc.base_model):
 		res = phymcmc.odeint(self.derivative,self.y0,numpy.hstack((0.0,t)))[1:,:]
 		# Replace data points below Vlim by Vlim
 		res[:,0] = numpy.maximum(self.pdic['Vlim'],res[:,0])
-		return numpy.hstack((res[:,:2],numpy.mean(res[:,2:],axis=1,keepdims=True)))
+		return numpy.hstack((res[:,:2],numpy.sum(res[:,2:],axis=1,keepdims=True)))
 
 	def get_normalized_ssr(self,pvec):
 		""" Computes total normalized SSR, i.e. SSR/stdev. """
