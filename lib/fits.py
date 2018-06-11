@@ -47,7 +47,7 @@ def scost(pvec, model, maxssr):
 		return maxssr
 	except: # Unknown error
 		print('WARNING: Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.')
-		print('params:', model.params.pardict)
+		print('pdic = '+repr(model.params.pardict))
 		return maxssr
 	import math
 	if math.isnan( nssr ):
@@ -58,8 +58,8 @@ def scost(pvec, model, maxssr):
 
 def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
 	if verbose:
-		print(model.params.parfit)
-		print(model.params.vector)
+		print(repr(model.params.parfit))
+		print(repr(model.params.vector))
 
 	# It's best to fit parameters in log space
 	pvec = numpy.log10(model.params.vector)
@@ -74,15 +74,15 @@ def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
 		model.params.vector = 10.0**pvec
 		ssr = lsout[2]['fvec'][0]
 		if verbose:
-			print( 'Levenberg-Marquardt, rep %d (ssr = %g)' % (rep,ssr) )
-			print( model.params.pardict )
+			print( '# Levenberg-Marquardt, rep %d (ssr = %g)' % (rep,ssr) )
+			print( repr(model.params.pardict) )
 
 	# One long but more accurate fit using the Nelder-Mead downhill simplex
 	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,maxssr), full_output=True, disp=False)[0:2]
 	model.params.vector = 10.0**pvec
 	if verbose:
-		print( 'Nelder-Mead (ssr = %g)' % ssr )
-		print( model.params.pardict )
+		print( '# Nelder-Mead (ssr = %g)' % ssr )
+		print( repr(model.params.pardict) )
 
 	# One last fit w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
 	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,maxssr), maxfev=7200, full_output=True)
@@ -90,8 +90,8 @@ def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
 	model.params.vector = 10.0**pvec
 	ssr = lsout[2]['fvec'][0]
 	if verbose:
-		print( 'Levenberg-Marquardt (final fit, ssr = %g)' % ssr )
-		print( model.params.pardict )
+		print( '# Levenberg-Marquardt (final fit, ssr = %g)' % ssr )
+		print( repr(model.params.pardict) )
 
 	# Returns (best-fit parameters, SSR)
 	return (model.params, ssr)
