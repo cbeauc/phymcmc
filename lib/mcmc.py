@@ -152,7 +152,7 @@ class MCSampler( object ):
 					wrem -= 1
 
 
-	def init_walkers_from_chain(self,oldchainfile):
+	def init_walkers_from_chain(self,oldchainfile, newpars=None):
 		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
@@ -162,11 +162,22 @@ class MCSampler( object ):
 		mcchaincopy = mcchain.value
 		# Make sure the # walkers in old chain match what's requested
 		assert mcchain.attrs['nwalkers'] == self.nwalkers, 'The number of walkers in %s (%d) is not what you requested (%d).' % (oldchainfile,mcchain.attrs['nwalkers'],self.nwalkers)
-		# Now re-position your walkers at their last location
+		# Keep a copy of the old list of params to estimate
+		oldparfit = list(mcchain.attrs['parfit'])[1:]
+		# Grab walker's position on their last step
 		idf = mcchain.attrs['filledlength']
 		idi = idf-mcchain.attrs['nwalkers']
 		f.close()
-		self.curpos = mcchaincopy[idi:idf,1:]
+		mcchaincopy = mcchaincopy[idi:idf,1:]
+		# Make sure the params in oldchain match what's requested or add them
+		self.curpos = []
+		for par in self.model.params.parfit:
+			if par in oldparfit:
+				self.curpos.append( mcchaincopy[:,oldparfit.index(par)] )
+			else:
+				assert newpars is not None, 'Param \'%s\' is not in oldchain but is required in newchain. Provide via newpars argument.' % par
+				self.curpos.append( newpars[par] )
+		self.curpos = numpy.vstack( self.curpos ).T
 		# Re-compute lnprob (best not to trust hdf5 chain file, in case)
 		self.create_curlnprob( self.curpos )
 
