@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ class params(phymcmc.ParamStruct):
 	def validate(self):
 		""" Assess validity of model parameters. """
 		if min(self.pardict.values()) < 0.0:
-			raise ValueError(self.pardict)
+			raise ValueError(repr(self.pardict))
 
 
 class line(phymcmc.base_model):
@@ -37,7 +37,10 @@ class line(phymcmc.base_model):
 		return self.par['slope']*self.data[:,0]+self.par['yint']
 	def get_normalized_ssr(self,pvec):
 		""" Computes total normalized SSR, i.e. SSR/stdev. """
-		self.params.vector = pvec
+		try:
+			self.params.vector = pvec
+		except ValueError:
+			return float('inf')
 		self.par = self.params.pardict
 		# Here SSR is not normalized by standard dev of residuals but should be
 		# (see example baccam to see what I mean)
