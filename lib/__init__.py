@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -16,8 +16,15 @@
 # =============================================================================
 
 from __future__ import print_function
+import math
 import sys
 NegInf = float('-inf')
+
+
+class ODEintegrationError(ValueError):
+	"""Raised if ODE integration is unsuccessful."""
+	pass
+
 
 class ParamStruct(object):
 	def __init__(self,pardict,parfit):
@@ -44,29 +51,40 @@ class base_model(object):
 		raise NotImplementedError
 	def get_lnprob(self,pvec):
 		"""
-			Determine the lnprob for the model, given the parameters.
-			for running a log parameter in lin scale or whatever). But
-			DO NOT check here for NaN. The sanity parsing of the SSR value
-			is done by the lnprobfn function in the phymcmc MCMC library.
+			Computes the lnprob for the model, given the parameters,
+			and handles errors raised as part of computing the SSR.
 		"""
 		try:
 			nssr = self.get_normalized_ssr(pvec)
-		except ValueError: # return if params are invalid
+		except ODEintegrationError as emg:
+			print(emg, file=sys.stderr)
+			print('pdic = %s'%repr(self.params.pardict), file=sys.stderr)
 			return NegInf
-		# IF we get a NaN...
-		# We should NOT ignore this since passing -inf is equivalent to
-		#   forbidding this parameter set value. So this is an additional
-		#   constraint we place on our parameters that we MUST be told
-		#   about. When you encounter this warning, investigate!
-		import math
+		except ValueError as emg: # Something wrong with these params
+			# IF we get this error...
+			#   you should investigate and determine why these params failed
+			#	and, if appropriate, you should explicitly forbid these values
+			#	via the phymcmc.ParamStruct.validate method.
+			print('** WARNING! An unexpected error occured (lnprob returned -inf) for:\npdic = %s\n\tYou should investigate and handle differently.'%repr(self.params.pardict), file=sys.stderr)
+			print(emg, file=sys.stderr)
+			return NegInf
 		if math.isnan( nssr ):
-			print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(self.params.pardict), file=sys.stderr)
+			# IF we get a NaN...
+			# We should NOT ignore this since passing -inf is equivalent to
+			#   forbidding this parameter set value. So this is an additional
+			#   constraint we place on our parameters that we MUST be told
+			#   about. When you encounter this warning, investigate!
+			print('** WARNING! lnprob encountered NaN SSR (and returned -inf) for:\npvec = %s'%repr(self.params.pardict), file=sys.stderr)
 			return NegInf
 		return -0.5*nssr
 
 
 def odeint(*args,**kwargs):
 	import scipy.integrate
-	assert 'mxstep' not in kwargs
-	kwargs['mxstep'] = 4000000
-	return scipy.integrate.odeint(*args,**kwargs)
+	kwargs['full_output'] = True
+	kwargs['printmessg'] = False
+	kwargs['mxhnil'] = 1
+	res,moreouts = scipy.integrate.odeint(*args,**kwargs)
+	if moreouts['message'] == 'Integration successful.':
+		return res
+	raise ODEintegrationError('** WARNING! ODE integration Error:\n  \"%s\"'%moreouts['message'])

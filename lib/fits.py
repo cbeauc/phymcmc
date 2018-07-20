@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@
 #
 
 from __future__ import print_function
+import math
 import numpy
 import scipy.optimize
 import sys
@@ -43,15 +44,15 @@ def scost(pvec, model, maxssr):
 	pvec = 10.0**pvec
 	try:
 		nssr = model.get_normalized_ssr(pvec)
-	except ValueError: # Invalid parameters
+		# nssr must be listed first in min for nan to be propagated
+		nssr = min(nssr, maxssr)
+	except (ArithmeticError,ValueError) as e:
+		print('** WARNING! Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.', file=sys.stderr)
+		print('pdic = '+repr(model.params.pardict), file=sys.stderr)
+		print(e, file=sys.stderr)
 		return maxssr
-	except: # Unknown error
-		print('WARNING: Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.')
-		print('pdic = '+repr(model.params.pardict))
-		return maxssr
-	import math
 	if math.isnan( nssr ):
-		print('WARNING: lnprob encountered NaN SSR (and returned -inf) for:\n '+repr(model.params.pardict), file=sys.stderr)
+		print('** WARNING! get_normalized_ssr encountered NaN SSR (and returned maxssr) for:\npdic = %s'%repr(model.params.pardict), file=sys.stderr)
 		return maxssr
 	return nssr
 
