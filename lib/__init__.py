@@ -79,6 +79,14 @@ class base_model(object):
 		return -0.5*nssr
 
 
+def solve_ivp(odefunc,t,y0,method='BDF', dense_output=False, events=None, vectorized=False, **options):
+	import scipy.integrate
+	res= scipy.integrate.solve_ivp(odefunc,(t[0],t[-1]),y0,method=method,t_eval=t,dense_output=dense_output,events=events,vectorized=vectorized,**options)
+	if res.success:
+		return res.y.T
+	raise ODEintegrationError('** WARNING! solve_ivp integration Error:\n %s'%repr(res))
+
+
 def odeint(*args,**kwargs):
 	import scipy.integrate
 	kwargs['full_output'] = True
