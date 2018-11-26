@@ -152,7 +152,7 @@ class MCSampler( object ):
 					wrem -= 1
 
 
-	def init_walkers_from_chain(self,oldchainfile, newpars=None):
+	def init_walkers_from_chain(self, oldchainfile, conditions=None, newpars=None):
 		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
@@ -165,15 +165,25 @@ class MCSampler( object ):
 		# Keep a copy of the old list of params to estimate
 		oldparfit = list(mcchain.attrs['parfit'])[1:]
 		# Grab walker's position on their last step
-		idf = mcchain.attrs['filledlength']
-		idi = idf-mcchain.attrs['nwalkers']
+		iend = mcchain.attrs['filledlength']
+		nwalkers = mcchain.attrs['nwalkers']
 		f.close()
-		mcchaincopy = mcchaincopy[idi:idf,1:]
+		if conditions is None:
+			curposs = mcchaincopy[iend-nwalkers:iend,1:]
+		else: # Impose conditions to be met by walker position
+			mcchaincopy = mcchaincopy[iend::-1,:]
+			icur = 0
+			curposs = []
+			while len(curposs) < nwalkers:
+				if conditions(mcchaincopy[icur][0],mcchaincopy[icur][1:],oldparfit):
+					curposs.append( mcchaincopy[icur][1:] )
+				icur += 1
+			curposs = numpy.array(curposs)
 		# Make sure the params in oldchain match what's requested or add them
 		self.curpos = []
 		for par in self.model.params.parfit:
 			if par in oldparfit:
-				self.curpos.append( mcchaincopy[:,oldparfit.index(par)] )
+				self.curpos.append( curposs[:,oldparfit.index(par)] )
 			else:
 				assert newpars is not None, 'Param \'%s\' is not in oldchain but is required in newchain. Provide via newpars argument.' % par
 				self.curpos.append( newpars[par] )
