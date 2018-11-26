@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -27,7 +27,6 @@ import phymcmc.mcmc
 ### plotting STUFF
 import matplotlib
 import matplotlib.style
-matplotlib.style.use('classic')
 from mpl_toolkits.mplot3d import Axes3D
 matplotlib.use('Agg')
 params = {
