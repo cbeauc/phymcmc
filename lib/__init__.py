@@ -60,13 +60,7 @@ class base_model(object):
 			print(emg, file=sys.stderr)
 			print('pdic = %s'%repr(self.params.pardict), file=sys.stderr)
 			return NegInf
-		except ValueError as emg: # Something wrong with these params
-			# IF we get this error...
-			#   you should investigate and determine why these params failed
-			#	and, if appropriate, you should explicitly forbid these values
-			#	via the phymcmc.ParamStruct.validate method.
-			print('** WARNING! An unexpected error occured (lnprob returned -inf) for:\npdic = %s\n\tYou should investigate and handle differently.'%repr(self.params.pardict), file=sys.stderr)
-			print(emg, file=sys.stderr)
+		except ValueError: # Expected, unallowed param encountered
 			return NegInf
 		if math.isnan( nssr ):
 			# IF we get a NaN...
