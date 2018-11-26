@@ -278,6 +278,24 @@ def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bi
 	return gridfig
 
 
+def sigma_plot(ax, x, data, pcents=[68.2689492137,95.4499736104], colors=('r',(0.8,0.8,0.8),(0.5,0.5,0.5))):
+	# First, massage the data
+	y = []
+	for adat in data:
+		y.append( numpy.interp(x,adat[:,0],adat[:,1]) )
+	# Median, 68%, 95%
+	percentiles = [50.0]
+	for pcent in numpy.sort(pcents):
+		tmp = (100.0-pcent)/2.0
+		percentiles += [tmp, 100-tmp]
+	percentiles = percentiles[-1::-1]
+	# Prepare the contour lines
+	y = numpy.percentile(numpy.vstack(y),percentiles,axis=0).T
+	for idx,col in enumerate(colors[-1:0:-1]):
+		ax.fill_between(x, y[:,2*idx],y[:,2*idx+1], facecolor=col,linewidth=0)
+	ax.plot(x,y[:,-1],color=colors[0],linestyle='-')
+
+
 def brooksgelman( par ):
 	""" This function implements the Brooks-Gelman method for evaluating
 		the convergence of an MCMC chain. Argument "par" is an array of
