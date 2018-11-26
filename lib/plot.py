@@ -347,8 +347,8 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.set_ylabel(key.replace('_','\_'))
 	ax.set_yscale( yscale )
 	tmp = numpy.percentile(pararray,[50.0,15.87,84.13,2.275,97.72],axis=1)
-	ax.plot(iters, tmp[0], 'r-', label='median')
-	ax.plot(iters, tmp[1], 'b-', iters, tmp[2], 'b-', label=r'$1\sigma$')
+	ax.plot(iters, tmp[0], '-', color='tab:orange', label='median')
+	ax.plot(iters, tmp[1], '-', iters, tmp[2], '-', color='tab:blue', label=r'$1\sigma$')
 	ax.plot(iters, tmp[3], 'k-', iters, tmp[4], 'k-', label=r'$2\sigma$')
 
 	# Actual chain
@@ -407,20 +407,22 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
 	ax.plot(iters[dis:],numpy.sqrt(bgstats['Rhat']),label=r'$\hat{R}$')
-	ax.plot([1,iters[-1]],[1,1],'k-')
+	ax.axhline(1.0,color='k',linestyle='-')
 	ax.set_ylim(0.9,max(numpy.sqrt(bgstats['Rhat'][len(bgstats['W'])/4]),1.5))
 	ax.set_xlim(iters[dis],iters[-1])
 	ax.legend(loc='best')
 	ax.set_title( title )
 
 
-def diagnostics( chain_file, savefile, nburn=0, parlist=None ):
+def diagnostics( chain_file, savefile, nburn=0, exclude_lnprob=False, parlist=None ):
 	# Get the chain first
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=nburn)
 
 	# Construct parlist from chain if none provided
 	if parlist is None:
-		parlist = chainattrs['parfit'][1:] # don't include SSR
+		parlist = chainattrs['parfit']
+		if exclude_lnprob:
+			parlist = parlist[1:]
 
 	# Check if reshaping the parameter arrays will restitute the chains
 	# correctly (rather than accidentally spread chains across columns).
