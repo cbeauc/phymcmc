@@ -152,7 +152,7 @@ class MCSampler( object ):
 					wrem -= 1
 
 
-	def init_walkers_from_chain(self, oldchainfile, conditions=None, newpars=None):
+	def init_walkers_from_chain(self, oldchainfile, replace_stuck_walkers=False, conditions=False, newpars=None):
 		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
@@ -168,17 +168,33 @@ class MCSampler( object ):
 		iend = mcchain.attrs['filledlength']
 		nwalkers = mcchain.attrs['nwalkers']
 		f.close()
-		if conditions is None:
+		if (conditions is None) and not replace_stuck_walkers:
 			curposs = mcchaincopy[iend-nwalkers:iend,1:]
-		else: # Impose conditions to be met by walker position
-			mcchaincopy = mcchaincopy[iend::-1,:]
-			icur = 0
+		else:
+			if conditions is None: # apply no conditions
+				conditions = lambda lam,pval,pkey: True
+			mcchaincopy = mcchaincopy[iend-1::-1,:] # start from end of chain
+			# Identify the bad walkers
+			if replace_stuck_walkers:
+				mmv = numpy.array([numpy.diff(numpy.nonzero(numpy.ediff1d(mcchaincopy[a::nwalkers,0],to_begin=1))[0]).mean() for a in range(nwalkers)])
+				badwalks = numpy.nonzero(numpy.isnan(mmv)+(mmv>100.0))[0]
+			else:
+				badwalks = ()
+			# Form array of suitable walkers
+			icur = -1
 			curposs = []
 			while len(curposs) < nwalkers:
-				if conditions(mcchaincopy[icur][0],mcchaincopy[icur][1:],oldparfit):
-					curposs.append( mcchaincopy[icur][1:] )
 				icur += 1
+				candidate = mcchaincopy[icur]
+				if (icur % nwalkers) in badwalks:
+					print('# Replaced stuck walker\n', repr(candidate))
+					continue
+				if conditions(candidate[0],candidate[1:],oldparfit):
+					curposs.append( candidate[1:] )
+				else:
+					print('# Replaced bad walker\n', repr(candidate))
 			curposs = numpy.array(curposs)
+			sys.stdout.flush()
 		# Make sure the params in oldchain match what's requested or add them
 		self.curpos = []
 		for par in self.model.params.parfit:
