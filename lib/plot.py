@@ -21,23 +21,28 @@
 # =============================================================================
 #
 
+import cycler
 import math
 import numpy
 import phymcmc.mcmc
 ### plotting STUFF
-import matplotlib
 import matplotlib.style
-from mpl_toolkits.mplot3d import Axes3D
+import matplotlib
+matplotlib.style.use('classic')
 matplotlib.use('Agg')
 params = {
-	'xtick.labelsize': 14,
-	'ytick.labelsize': 14,
+	# Adopt some matplotlib v2.0 changes
+	'axes.prop_cycle': cycler.cycler(color=('tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan')),
+	'image.cmap': 'viridis',
+	# Makes things better
+	'xtick.labelsize': 14.0,
+	'ytick.labelsize': 14.0,
 	'axes.titlesize': 'medium',
 	'axes.labelsize': 'medium',
 	'legend.fontsize': 'medium',
 	'font.family': 'serif',
 	'font.serif': 'Computer Modern Roman',
-	'font.size': 14,
+	'font.size': 14.0,
 	'text.usetex': True
 }
 matplotlib.rcParams.update(params)
