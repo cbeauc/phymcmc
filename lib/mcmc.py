@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -177,7 +177,7 @@ class MCSampler( object ):
 			# Identify the bad walkers
 			if replace_stuck_walkers:
 				mmv = numpy.array([numpy.diff(numpy.nonzero(numpy.ediff1d(mcchaincopy[a::nwalkers,0],to_begin=1))[0]).mean() for a in range(nwalkers)])
-				badwalks = numpy.nonzero(numpy.isnan(mmv)+(mmv>100.0))[0]
+				badwalks = numpy.nonzero(mmv>100.0)[0]
 			else:
 				badwalks = ()
 			# Form array of suitable walkers
