@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2016 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -164,6 +164,10 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=T
 		pardic = dict()
 		pardic['linpars'] = linpars
 		for key in parlist:
+			# Skip keys when not present in a particular chain
+			if key not in pdic.keys():
+				pardic[key] = '---'
+				continue
 			# Copy distribution and use log if appropriate
 			dis = 1.0*pdic[key]
 			if key not in linpars:
@@ -180,18 +184,22 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=T
 # This function compares a list of chains, pairwise, and returns
 # a dictionary where the keys are the parameters and the
 # values are lists of the p-values for each pairwise comparison.
-def chains_compare( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 ):
+def chains_compare( chainfiles, pairings=None, bayes=True, parlist=None, linpars=None, nburn=0 ):
 
-	# Do the combinatorics for pairwise-comparison
-	nchains = len(chainfiles)
 	pvaldic = dict()
 	if parlist is not None:
 		for key in parlist:
 			pvaldic[key] = []
-	for id1 in range(nchains-1):
-		pdic1, attrs1 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id1], nburn=nburn)
 
-		# Build parlist if None
+	# Do the combinatorics for pairwise-comparison
+	if pairings is None:
+		nchains = len(chainfiles)
+		pairings = [(id1,id2) for id1 in range(nchains-1) for id2 in range(id1+1,nchains)]
+	for id1,id2 in pairings:
+		pdic1, attrs1 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id1], nburn=nburn)
+		pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id2], nburn=nburn)
+
+		# Build parlist if None (will run only once)
 		if parlist is None:
 			parlist = []
 			for key,value in pdic1.items():
@@ -202,28 +210,27 @@ def chains_compare( chainfiles, bayes=True, parlist=None, linpars=None, nburn=0 
 				if key not in parlist:
 					parlist.append( key )
 					pvaldic[key] = []
-
 		if linpars is None:
 			linpars = attrs1['linpars']
 
-		# Now let's look at that second chain
-		for id2 in range(id1+1,nchains):
-			pdic2, attrs2 = phymcmc.mcmc.load_mcmc_chain(chainfiles[id2], nburn=nburn)
-			nvals = min(len(pdic1['lnprob']), len(pdic2['lnprob']))
+		nvals = min(len(pdic1['lnprob']), len(pdic2['lnprob']))
 
-			# Compute p-value for each key
-			for key in parlist:
-				if key in linpars:
-					dis1 = 1.0*pdic1[key]
-					dis2 = 1.0*pdic2[key]
-				else:
-					dis1 = numpy.log10(pdic1[key])
-					dis2 = numpy.log10(pdic2[key])
-				# numpy.random.choice picks at random w replacement
-				disdif = numpy.random.choice(dis1,5*nvals)-numpy.random.choice(dis2,5*nvals)
-				# Compute p-value (to compare signif of difference)
-				pval = compute_pvalue(disdif,bayes=bayes)
-				pvaldic[key].append(pval)
+		# Compute p-value for each key
+		for key in parlist:
+			if (key not in pdic1.keys()) or (key not in pdic2.keys()):
+				pvaldic[key].append('---')
+				continue
+			if key in linpars:
+				dis1 = 1.0*pdic1[key]
+				dis2 = 1.0*pdic2[key]
+			else:
+				dis1 = numpy.log10(pdic1[key])
+				dis2 = numpy.log10(pdic2[key])
+			# numpy.random.choice picks at random w replacement
+			disdif = numpy.random.choice(dis1,5*nvals)-numpy.random.choice(dis2,5*nvals)
+			# Compute p-value (to compare signif of difference)
+			pval = compute_pvalue(disdif,bayes=bayes)
+			pvaldic[key].append(pval)
 	return pvaldic
 
 
@@ -248,7 +255,9 @@ def table_params( dic, parlist=None, parlabels=None, linpars=None ):
 	for key,label in zip(parlist,parlabels):
 		table += '%s ' % label
 		for strain in range(nstrains):
-			if key in analysis_linpars:
+			if dic[strain][key] == '---':
+				table += '& --- '
+			elif key in analysis_linpars:
 				table += '& $%.3g\\ [%.2g,%.2g]$ ' % dic[strain][key]
 			elif key in linpars:
 				table += '& $%.3g\\ [%.2g,%.2g]$ ' % tuple([10.0**i for i in dic[strain][key]])
@@ -273,20 +282,22 @@ def table_compare( dic, labels=None, parlist=None, parlabels=None ):
 		while N+1 < len(dic[parlist[0]]):
 			N += dN; dN += 1
 		labels = range(dN)
-	labels = tuple('%s:%s'%label for label in itertools.combinations(labels,2))
+		labels = tuple('%s:%s'%label for label in itertools.combinations(labels,2))
 
 	# Make table header
 	nstrains = len(labels)
 	table = '\hspace{-7em}%%\n\\begin{tabular}{l'
 	table += 'c'*nstrains + '}\n'
-	table += 'Parameter ' + ('& %s '*nstrains) % labels
+	table += 'Parameter ' + ('& %s '*nstrains) % tuple(labels)
 	table += '\\\\\n'
 	# Make table: row=param, col=strain-pair
 	for key,label in zip(parlist,parlabels):
 		table += '%s ' % label
 		for idx,label in enumerate(labels):
 			pval = dic[key][idx]
-			if pval < 0.001:
+			if pval == '---':
+				table += '& --- '
+			elif pval < 0.001:
 				table += '& $\\mathbf{< 0.001}$ '
 			elif pval < 0.05:
 				table += '& \\textbf{%.3f} ' % pval
