@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -152,7 +152,7 @@ class MCSampler( object ):
 					wrem -= 1
 
 
-	def init_walkers_from_chain(self, oldchainfile, replace_stuck_walkers=False, conditions=False, newpars=None):
+	def init_walkers_from_chain(self, oldchainfile, replace_stuck_walkers=False, conditions=None, newpars=None):
 		self.tstart = time.time()
 		if self.verbose:
 			print('Reading walkers initial pos from end of %s'% oldchainfile)
@@ -376,7 +376,7 @@ def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 	idx = opdic['lnprob'].argmax()
 	pdic = {}
 	for key,val in opdic.items():
-		if key in pfit:
+		if isinstance(val, numpy.ndarray):
 			pdic[key] = val[idx]
 		else:
 			pdic[key] = val
