@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ class params(phymcmc.ParamStruct):
 
 
 class model(phymcmc.base_model):
-	def derivative(self,x,t):
+	def derivative(self,t,x):
 		""" Return the derivative of each variable of the model. """
 		(V,T,I) = (x[0],x[1],x[2:])
 		dV = self.pdic['p']*numpy.sum(I) - self.pdic['c']*V
@@ -42,7 +42,7 @@ class model(phymcmc.base_model):
 		self.pdic = self.params.pardict
 		self.d = self.pdic['nI']/self.pdic['tI']
 		self.y0 = numpy.hstack((self.pdic['V0'], self.pdic['N'], numpy.zeros(self.pdic['nI'])))
-		res = phymcmc.odeint(self.derivative,self.y0,numpy.hstack((0.0,t)))[1:,:]
+		res = phymcmc.solve_ivp(self.derivative,t,self.y0)
 		# Replace data points below Vlim by Vlim
 		res[:,0] = numpy.maximum(self.pdic['Vlim'],res[:,0])
 		return numpy.hstack((res[:,:2],numpy.sum(res[:,2:],axis=1,keepdims=True)))
@@ -54,5 +54,8 @@ class model(phymcmc.base_model):
 		except ValueError:
 			return float('inf')
 		dathpi,datV,sigV = self.data
-		residuals = numpy.log10( self.get_solution(dathpi)[:,0]/datV )/sigV
+		# Required to tell solve_ivp that initial conditions (y0) are for t=0
+		tsim = numpy.hstack((0.0,dathpi))
+		#	now need to throw out first row (t=0) to get rid of t=0 results
+		residuals = numpy.log10( self.get_solution(tsim)[1:,0]/datV )/sigV
 		return (residuals**2.0).sum()
