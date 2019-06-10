@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -25,6 +25,10 @@ import cycler
 import math
 import numpy
 import phymcmc.mcmc
+## This imports the "old" autocorr.py from
+##		a past version of Dan Foreman-Mackey's emcee
+import autocorr as dfmautocorr
+
 ### plotting STUFF
 import matplotlib.style
 import matplotlib
@@ -384,17 +388,13 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
 	ax.set_title(r'Integrated autocorr time')
-	if False:
-		from .emcee import autocorr as dfmautocorr
-		autocorr = []
-		for stepn in range(1,N):
-			try:
-				acor = dfmautocorr.integrated_time(pararray[:stepn,:].mean(axis=1))
-			except dfmautocorr.AutocorrError:
-				acor = -numpy.ones(pararray.shape[1])
-			autocorr.append( acor )
-		ax.plot(range(N-1),autocorr)
-		ax.set_ylim(bottom=0.0)
+	pmean = pararray.mean(axis=1)
+	idxs = len(pmean)/200
+	idxs = range(idxs,len(pmean),idxs)+[len(pmean)-1]
+	acorr = []
+	for idx in idxs:
+		acorr.append( dfmautocorr.integrated_time(pmean[:idx]) )
+	ax.plot(idxs,acorr)
 
 	# Brooks-Gelman
 	dis = 1
