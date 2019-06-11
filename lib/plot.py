@@ -27,7 +27,7 @@ import numpy
 import phymcmc.mcmc
 ## This imports the "old" autocorr.py from
 ##		a past version of Dan Foreman-Mackey's emcee
-import autocorr as dfmautocorr
+import phymcmc.autocorr as dfmautocorr
 
 ### plotting STUFF
 import matplotlib.style
@@ -61,10 +61,10 @@ matplotlib.rcParams.update(params)
 
 
 class grid_plot(object):
-	def __init__(self, (gridheight,gridwidth), hspace=0.35, wspace=0.2, rwidth=3.0, rheight=2.8):
+	def __init__(self, ghgw, hspace=0.35, wspace=0.2, rwidth=3.0, rheight=2.8):
 		import matplotlib.pyplot
-		self.gh = gridheight
-		self.gw = gridwidth
+		self.gh = ghgw[0]
+		self.gw = ghgw[1]
 		# Setup the figure looking nice
 		self.fig = matplotlib.pyplot.figure()
 		self.fig.set_size_inches(rwidth*self.gw,rheight*self.gh)
