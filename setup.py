@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -12,17 +12,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+###############################################################################
 
 from distutils.core import setup
 
 setup(
 	name = 'phymcmc',
-	version = '0.3',
+	version = '0.4',
 	author = 'Catherine Beauchemin',
 	author_email = 'cbeau@users.sourceforge.net',
-	description = 'The phymbie fitting/mcmc library.',
-	url = 'http://phymbie.physics.ryerson.ca',
-	license = 'See file LICENSE',
+	url = 'https://github.com/cbeauc/phymcmc',
+	license = 'See LICENSE file',
+	description = 'Wraps emcee providing convenient functions and scripts',
+	long_description = open("README.rst").read(),
+	package_data = {"": ["LICENSE"]},
 	packages = [
 		'phymcmc',
 		'phymcmc.emcee'
