@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2018 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -96,20 +96,6 @@ def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
 
 	# Returns (best-fit parameters, SSR)
 	return (model.params, ssr)
-
-
-def mock_yield_coeff(data):
-	"""Pre-computes part of Mock-Yield SSR calculation.
-
-	argument: data a 2-column array with (time,virus)
-	returns: a tuple (arg1,arg2) from which you can compute
-	      SSR = arg1 + arg2 * clear
-	where 'clear' is your clearance rate.
-	"""
-	import math
-	td = data[:,0].mean()-data[:,0]
-	vd = numpy.log10(data[:,1]).mean()-numpy.log10(data[:,1])
-	return (vd, math.log10(math.e)*td)
 
 
 def linregress(x, y=None):
