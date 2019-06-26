@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,25 +13,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 #
 # =============================================================================
-#
-#                                   Preamble
-#
-# =============================================================================
-#
 
 import os
 import phymcmc.plot
-
-#
-# =============================================================================
-#
-#                                   Main
-#
-# =============================================================================
-#
 
 chainfile = os.path.abspath('chain_lin.hdf5')
 
@@ -44,21 +30,14 @@ labeldic = {
 }
 allpars = ['ssr','slope','yint','slotyint']
 
-# Making triangle plot of param pairs
-if True:
-	plotpars = allpars[:-1]
-	plotlabels = plotpars
-	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
-	# Make PDF from PNG otherwise PDF is too big
-	import subprocess
-	fig.savefig('triangle_lin.png', bbox_inches='tight')
-	subprocess.call('convert triangle_lin.png triangle_lin.pdf', shell=True)
-	subprocess.call('rm -f triangle_lin.png', shell=True)
-
-# Making histogram grid of all params
-if True:
-	colors = ['blue']
-	plotpars = allpars
-	plotlabels = [labeldic[key] for key in plotpars]
-	gridfig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(1,4), labels=plotlabels)
-	gridfig.fig.savefig('hists_lin.pdf', bbox_inches='tight')
+# Example of making histogram grid of all params
+colours = ['blue']
+plotlabels = [labeldic[key] for key in allpars]
+gridfig = phymcmc.plot.hist_grid( [chainfile], parlist=allpars, labels=plotlabels, colors=colours, dims=(1,4), nburn=200 )
+# Adjust some params
+ax = gridfig.fig.axes[allpars.index('yint')]
+ax.set_xlim(7.8,9.0)
+ax = gridfig.fig.axes[allpars.index('slotyint')]
+ax.set_xlim(110.0,140.0)
+ax.set_xscale('linear')
+gridfig.fig.savefig('hists_lin.pdf', bbox_inches='tight')
