@@ -1,0 +1,23 @@
+{
+	"@context": "https://raw.githubusercontent.com/codemeta/codemeta/master/codemeta.jsonld",
+	"@type": "Code",
+	"author": [
+		{
+			"@id": "http://orcid.org/0000-0003-0599-0069",
+			"@type": "Person",
+			"email": "cbeau@users.sourceforge.net",
+			"name": "Catherine A. A. Beauchemin",
+			"affiliation": "Ryerson University"
+		}
+	],
+	"identifier": "http://dx.doi.org/TBD",
+	"codeRepository": "https://github.com/cbeauc/phymcmc",
+	"datePublished": "2019-06-25",
+	"dateModified": "2019-06-25",
+	"dateCreated": "2019-06-25",
+	"description": "A wrapper for emcee providing convenient functions and scripts",
+	"keywords": "mcmc, Python, parameter estimation",
+	"license": "GNU GPL version 3.0",
+	"title": "phymcmc",
+	"version": "v0.3"
+}
