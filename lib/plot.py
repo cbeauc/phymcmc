@@ -71,7 +71,7 @@ class grid_plot(object):
 		matplotlib.pyplot.subplots_adjust(hspace=hspace, wspace=wspace)
 
 	def subaxes(self, idx, *args, **kwargs):
-		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx/self.gw,idx%self.gw), *args, **kwargs)
+		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx//self.gw,idx%self.gw), *args, **kwargs)
 
 
 def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weights=None ):
