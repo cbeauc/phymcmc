@@ -163,7 +163,7 @@ class MCSampler( object ):
 		# Make sure the # walkers in old chain match what's requested
 		assert mcchain.attrs['nwalkers'] == self.nwalkers, 'The number of walkers in %s (%d) is not what you requested (%d).' % (oldchainfile,mcchain.attrs['nwalkers'],self.nwalkers)
 		# Keep a copy of the old list of params to estimate
-		oldparfit = list(mcchain.attrs['parfit'])[1:]
+		oldparfit = list(eval(mcchain.attrs['parfit']))[1:]
 		# Grab walker's position on their last step
 		iend = mcchain.attrs['filledlength']
 		nwalkers = mcchain.attrs['nwalkers']
@@ -250,11 +250,11 @@ class MCSampler( object ):
 		# Store some additional properties along with the chain
 		fchain.attrs['filledlength'] = 0
 		fchain.attrs['pardict'] = '{\'lnprob\': 0.0, '+repr(self.model.params.pardict)[1:]
-		fchain.attrs['parfit'] = ['lnprob']+self.model.params.parfit
+		fchain.attrs['parfit'] = repr(['lnprob']+self.model.params.parfit)
 		fchain.attrs['nwalkers'] = self.nwalkers
 		fchain.attrs['nsteps'] = self.nsteps
 		fchain.attrs['stepsize'] = self.stepsize
-		fchain.attrs['linpars'] = self.linpars
+		fchain.attrs['linpars'] = repr(self.linpars)
 		# Store the walker's original position into the chain file
 		nl = self.nwalkers
 		f['mcchain'][:nl,0] = self.curlnprob
@@ -324,7 +324,7 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	pardict = eval( mcchain.attrs['pardict'] )
 	# Build dictionary of chain attributes
 	chainattrs = {}
-	chainattrs['parfit'] = mcchain.attrs['parfit']
+	chainattrs['parfit'] = eval(mcchain.attrs['parfit'])
 	chainattrs['acceptance_fraction'] = f['acceptance_fraction'].value
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']

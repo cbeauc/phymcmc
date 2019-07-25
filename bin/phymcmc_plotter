@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2017-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -65,7 +65,7 @@ def parse_args():
 #
 
 args, savename, plotsrequested = parse_args()
-print 'Will now plot for you:', plotsrequested
+print('Will now plot for you:', plotsrequested)
 
 if {'diag','all'} & plotsrequested:
 	phymcmc.plot.diagnostics( args.chainfile, savename, nburn=args.nburn )
@@ -75,13 +75,8 @@ if {'hist','all'} & plotsrequested:
 	gridfig.fig.savefig(savename+'_hist.pdf', bbox_inches='tight')
 
 if {'triangle','all'} & plotsrequested:
-	import tempfile
-	import subprocess
 	fig = phymcmc.plot.triangle( args.chainfile, nburn=args.nburn )
-	_,tmpfname = tempfile.mkstemp(suffix='.png')
-	fig.savefig(tmpfname, bbox_inches='tight')
-	subprocess.call('convert %s %s_triangle.pdf'% (tmpfname,savename), shell=True)
-	subprocess.call('rm -f %s'% tmpfname, shell=True)
+	fig.savefig(savename+'_triangle.pdf', bbox_inches='tight')
 
 if {'square','all'} & plotsrequested:
 	gridfig = phymcmc.plot.square( args.chainfile, nburn=args.nburn )

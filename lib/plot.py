@@ -190,8 +190,8 @@ def hist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'):
 	# Now we're ready to make a beautiful histogram
 	facecol = list(matplotlib.colors.colorConverter.to_rgb(color))
 	facecol = tuple( facecol + [0.2] ) # Add alpha for face
-	b = numpy.hstack(zip(b,b))
-	n = numpy.hstack([0.0]+zip(n,n)+[0.0])
+	b = numpy.hstack(list(zip(b,b)))
+	n = numpy.hstack([0.0]+list(zip(n,n))+[0.0])
 	ax.fill( b, n, facecolor=facecol, edgecolor=color, linewidth=2.0 )
 	if not linear:
 		ax.set_xscale('log')
@@ -389,8 +389,8 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	i += 1
 	ax.set_title(r'Integrated autocorr time')
 	pmean = pararray.mean(axis=1)
-	idxs = len(pmean)/200
-	idxs = range(idxs,len(pmean),idxs)+[len(pmean)-1]
+	idxs = len(pmean)//200
+	idxs = list(range(idxs,len(pmean),idxs))+[len(pmean)-1]
 	acorr = []
 	for idx in idxs:
 		acorr.append( dfmautocorr.integrated_time(pmean[:idx]) )
@@ -413,7 +413,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	i += 1
 	ax.plot(iters[dis:],numpy.sqrt(bgstats['Rhat']),label=r'$\hat{R}$')
 	ax.axhline(1.0,color='k',linestyle='-')
-	ax.set_ylim(0.9,max(numpy.sqrt(bgstats['Rhat'][len(bgstats['W'])/4]),1.5))
+	ax.set_ylim(0.9,max(numpy.sqrt(bgstats['Rhat'][len(bgstats['W'])//4]),1.5))
 	ax.set_xlim(iters[dis],iters[-1])
 	ax.legend(loc='best')
 	ax.set_title( title )
