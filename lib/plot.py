@@ -21,7 +21,6 @@
 # =============================================================================
 #
 
-import cycler
 import math
 import numpy
 import phymcmc.mcmc
@@ -30,14 +29,9 @@ import phymcmc.mcmc
 import phymcmc.autocorr as dfmautocorr
 
 ### plotting STUFF
-import matplotlib.style
 import matplotlib
-matplotlib.style.use('classic')
 matplotlib.use('Agg')
 params = {
-	# Adopt some matplotlib v2.0 changes
-	'axes.prop_cycle': cycler.cycler(color=('tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan')),
-	'image.cmap': 'viridis',
 	# Makes things better
 	'xtick.labelsize': 14.0,
 	'ytick.labelsize': 14.0,
@@ -173,6 +167,23 @@ def choose_bins(x, nbins, linear=False):
 		return numpy.linspace(5.0*whm[0]-4.0*whm[1],5.0*whm[2]-4.0*whm[1],nbins)
 	whm = numpy.percentile(numpy.log10(x),[15.87,50,84.13])
 	return 10.**numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
+
+
+def violinhist( ax, ysets, xlocs, ybins, edgecolor='tab:blue', facecolor='#a5c9e1', linewidth=0.0 ):
+	for xloc,yset,ybin in zip(xlocs,ysets,ybins):
+		# Select the binning
+		if isinstance(ybin,int):
+			tbins = choose_bins( yset, ybin, linear=linear )
+		else:
+			tbins = ybin
+		# Distribute data into the bins
+		n,b = numpy.histogram( yset, tbins )
+		n = n/numpy.max(n) * numpy.diff(xlocs)[0]*0.45
+		b = list(zip(b,b)); b = numpy.hstack(b+b[-1::-1])
+		n = numpy.hstack([0.0]+list(zip(n,n))+[0.0])
+		n = numpy.hstack((xloc-n,xloc+n[-1::-1]))
+		ax.fill( n, b, facecolor=facecolor, edgecolor=edgecolor, linewidth=linewidth )
+	return ax
 
 
 def hist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'):
