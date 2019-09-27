@@ -123,7 +123,7 @@ def square( chainfile, parlist=None, labels=None, color='b', nbins=20, reset=Tru
 	else:
 		assert gridfig is not None, "If reset is False, you must provide a gridfig."
 	if labels is None:
-		labels = parlist
+		labels = [key.replace('_','\_') for key in parlist]
 	if linpars is None:
 		linpars = chainattrs['linpars']
 	# Deciding index binning
@@ -254,7 +254,7 @@ def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bi
 	gridfig = grid_plot((gh,gw))
 	# Set labels
 	if labels is None:
-		labels = parlist
+		labels = [key.replace('_','\_') for key in parlist]
 	# Set colour iteration
 	if colors is None:
 		colors = ['blue','red','green','black','gold'][:len(parlist)]
@@ -400,7 +400,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	i += 1
 	ax.set_title(r'Integrated autocorr time')
 	pmean = pararray.mean(axis=1)
-	idxs = len(pmean)//200
+	idxs = max( 1, len(pmean)//200 ) # compute no more than 200 points
 	idxs = list(range(idxs,len(pmean),idxs))+[len(pmean)-1]
 	acorr = []
 	for idx in idxs:
