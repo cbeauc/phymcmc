@@ -50,7 +50,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 	# In the future, I could re-write to allow resizing of chain_file array
 	f = h5py.File( chain_file, "r" )
 	mcchain = f['mcchain']
-	mcchaincopy = mcchain.value
+	mcchaincopy = mcchain[:]
 	# Set sampler parameters from chain_file
 	mcpars = dict(
 		chain_file = chain_file,
@@ -65,7 +65,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 	)
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
-	sampler.acceptance_fraction = f['acceptance_fraction'].value
+	sampler.acceptance_fraction = f['acceptance_fraction'][:]
 	# Now re-position your walkers at their last location
 	idx = mcchain.attrs['filledlength']-mcchain.attrs['nwalkers']
 	sampler.curlnprob = mcchaincopy[idx:,0]
@@ -159,7 +159,7 @@ class MCSampler( object ):
 			sys.stdout.flush()
 		f = h5py.File(oldchainfile, 'r')
 		mcchain = f['mcchain']
-		mcchaincopy = mcchain.value
+		mcchaincopy = mcchain[:]
 		# Make sure the # walkers in old chain match what's requested
 		assert mcchain.attrs['nwalkers'] == self.nwalkers, 'The number of walkers in %s (%d) is not what you requested (%d).' % (oldchainfile,mcchain.attrs['nwalkers'],self.nwalkers)
 		# Keep a copy of the old list of params to estimate
@@ -246,7 +246,7 @@ class MCSampler( object ):
 		# Open/create the HDF5 chain file
 		f = h5py.File(self.chain_file, "w")
 		# Create the "flatchain" structure to hold the chain array
-		fchain = f.create_dataset("mcchain", ((self.nsteps+1)*self.nwalkers,self.npars+1))
+		fchain = f.create_dataset("mcchain", ((self.nsteps+1)*self.nwalkers,self.npars+1), dtype='float64')
 		# Store some additional properties along with the chain
 		fchain.attrs['filledlength'] = 0
 		fchain.attrs['pardict'] = '{\'lnprob\': 0.0, '+repr(self.model.params.pardict)[1:]
@@ -320,12 +320,12 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	f = h5py.File( chain_file, "r" )
 	mcchain = f['mcchain']
 	# Copy over only the non-zero, filled part of array
-	mcchaincopy = mcchain.value[:mcchain.attrs['filledlength'],:]
+	mcchaincopy = mcchain[:mcchain.attrs['filledlength'],:]
 	pardict = eval( mcchain.attrs['pardict'] )
 	# Build dictionary of chain attributes
 	chainattrs = {}
 	chainattrs['parfit'] = eval(mcchain.attrs['parfit'])
-	chainattrs['acceptance_fraction'] = f['acceptance_fraction'].value
+	chainattrs['acceptance_fraction'] = f['acceptance_fraction'][:]
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
@@ -335,7 +335,7 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	# get them out as well.
 	derivedchain = False
 	if 'derivedchain' in f:
-		derivedchain = f['derivedchain'].value
+		derivedchain = f['derivedchain'][:]
 		derivedparlist = f['derivedchain'].attrs['parlist']
 		pardict.update( eval(f['derivedchain'].attrs['pardict']) )
 	f.close()
