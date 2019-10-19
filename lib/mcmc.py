@@ -57,7 +57,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 		model = model,
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
-		linpars = mcchain.attrs['linpars'],
+		linpars = eval(mcchain.attrs['linpars']),
 		stepsize = mcchain.attrs['stepsize'],
 		threads = threads,
 		pool = pool,
@@ -330,7 +330,7 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
 	chainattrs['stepsize'] = mcchain.attrs['stepsize']
-	chainattrs['linpars'] = mcchain.attrs['linpars']
+	chainattrs['linpars'] = eval(mcchain.attrs['linpars'])
 	# If parameters derived/calculated from the chain are in there
 	# get them out as well.
 	derivedchain = False
