@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,7 +41,8 @@ params = {
 	'font.family': 'serif',
 	'font.serif': 'Computer Modern Roman',
 	'font.size': 14.0,
-	'text.usetex': True
+	'text.usetex': True,
+	'text.latex.preamble': r'\usepackage{amssymb,amsmath}\usepackage[squaren]{SIunits}\usepackage{hyperref}',
 }
 matplotlib.rcParams.update(params)
 
@@ -169,8 +170,11 @@ def choose_bins(x, nbins, linear=False):
 	return 10.**numpy.linspace(5.0*whm[0]-4.0*whm[1],6.0*whm[1]-5.0*whm[0],nbins)
 
 
-def violinhist( ax, ysets, xlocs, ybins, edgecolor='tab:blue', facecolor='#a5c9e1', linewidth=0.0 ):
-	for xloc,yset,ybin in zip(xlocs,ysets,ybins):
+def violinhist( ax, ysets, xlocs, ybins, edgecolor='tab:blue', facecolor='#a5c9e1', linewidth=0.0, linear=False ):
+	dx = numpy.diff(xlocs)
+	dx = numpy.minimum(dx[:-1],dx[1:])
+	dxs = numpy.hstack((dx[0],dx,dx[-1]))*0.45
+	for xloc,yset,ybin,dx in zip(xlocs,ysets,ybins,dxs):
 		# Select the binning
 		if isinstance(ybin,int):
 			tbins = choose_bins( yset, ybin, linear=linear )
@@ -178,7 +182,7 @@ def violinhist( ax, ysets, xlocs, ybins, edgecolor='tab:blue', facecolor='#a5c9e
 			tbins = ybin
 		# Distribute data into the bins
 		n,b = numpy.histogram( yset, tbins )
-		n = n/numpy.max(n) * numpy.diff(xlocs)[0]*0.45
+		n = n/numpy.max(n) * dx
 		b = list(zip(b,b)); b = numpy.hstack(b+b[-1::-1])
 		n = numpy.hstack([0.0]+list(zip(n,n))+[0.0])
 		n = numpy.hstack((xloc-n,xloc+n[-1::-1]))
