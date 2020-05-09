@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -307,7 +307,7 @@ class MCSampler( object ):
 				f.close()
 				if self.verbose:
 					twrite = time.time()
-					print('   writing to dist took %g s' % (twrite-self.tstart))
+					print('   writing to disk took %g s' % (twrite-self.tstart))
 					print('Wrote %g%% of simulation to disk for you.' % (100*(nstp+1)/self.nsteps))
 					sys.stdout.flush()
 				poss = []
