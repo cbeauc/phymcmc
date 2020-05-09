@@ -17,12 +17,12 @@ Attribution
 
 If you make use of this code, make sure to cite it.
 
-The BibTeX entry for the paper is::
+The BibTeX entry is::
 
 	@MANUAL{phymcmc,
 		AUTHOR = "Catherine A. A. Beauchemin",
 		TITLE = "{phymcmc}: {A} convenient wrapper for emcee",
-		YEAR = "2019",
+		YEAR = "2020",
 		PUBLISHER = "{GitHub}",
 		JOURNAL = "{GitHub} repository",
 		HOWPUBLISHED = "\url{https://github.com/cbeauc/phymcmc}"
@@ -32,6 +32,6 @@ The BibTeX entry for the paper is::
 License
 -------
 
-Copyright 2014-2019 Catherine Beauchemin and contributors.
+Copyright 2014-2020 Catherine Beauchemin and contributors.
 
 phymcmc is free software made available under the GNU General Public License Version 3. For details see the LICENSE file.
