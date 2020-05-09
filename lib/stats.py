@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -149,14 +149,6 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=T
 		# Establish a parlist
 		if parlist is None:
 			parlist = list(attrs['parfit'])
-			for key,value in pdic.items():
-				try:
-					len(value) # eliminate non-lists
-				except TypeError:
-					continue
-				if len(value) == len(pdic['lnprob']):
-					if key not in parlist:
-						parlist.append( key )
 		if linpars is None:
 			linpars = attrs['linpars']
 
@@ -167,6 +159,12 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=T
 			# Skip keys when not present in a particular chain
 			if key not in pdic.keys():
 				pardic[key] = '---'
+				continue
+			# Indicated fixed values if param not fitted but exists
+			try:
+				len(pdic[key]) # if fixed rather than varied
+			except TypeError:
+				pardic[key] = (pdic[key],float('nan'),float('nan')) # nan indicates not-varied
 				continue
 			# Copy distribution and use log if appropriate
 			dis = 1.0*pdic[key]
