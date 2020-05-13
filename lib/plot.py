@@ -109,7 +109,7 @@ def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weig
 	ax.set_title('lnProb')
 	ax.set_yticklabels([])
 	tbins = numpy.linspace(x.max()-3.5*(x.max()-numpy.median(x)),x.max(),50)
-	ax.hist(x, bins=tbins, normed=True, color='black', histtype='step')
+	ax.hist(x, bins=tbins, color='black', histtype='step')
 	return fig
 
 
