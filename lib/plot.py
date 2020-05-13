@@ -30,21 +30,25 @@ import phymcmc.autocorr as dfmautocorr
 
 ### plotting STUFF
 import matplotlib
-matplotlib.use('Agg')
 params = {
 	# Makes things better
+	'backend': 'PDF',
 	'xtick.labelsize': 14.0,
+	'xtick.direction': 'in',
+	'xtick.top': True,
 	'ytick.labelsize': 14.0,
+	'ytick.direction': 'in',
+	'ytick.right': True,
 	'axes.titlesize': 'medium',
 	'axes.labelsize': 'medium',
 	'legend.fontsize': 'medium',
 	'font.family': 'serif',
-	'font.serif': 'Computer Modern Roman',
 	'font.size': 14.0,
 	'text.usetex': True,
-	'text.latex.preamble': r'\usepackage{amssymb,amsmath}\usepackage[squaren]{SIunits}\usepackage{hyperref}',
 }
 matplotlib.rcParams.update(params)
+import matplotlib.figure
+from matplotlib.backends.backend_pdf import FigureCanvas
 
 #
 # =============================================================================
@@ -57,16 +61,14 @@ matplotlib.rcParams.update(params)
 
 class grid_plot(object):
 	def __init__(self, ghgw, hspace=0.35, wspace=0.2, rwidth=3.0, rheight=2.8):
-		import matplotlib.pyplot
 		self.gh = ghgw[0]
 		self.gw = ghgw[1]
 		# Setup the figure looking nice
-		self.fig = matplotlib.pyplot.figure()
-		self.fig.set_size_inches(rwidth*self.gw,rheight*self.gh)
-		matplotlib.pyplot.subplots_adjust(hspace=hspace, wspace=wspace)
+		self.fig = matplotlib.figure.Figure(figsize=(rwidth*self.gw,rheight*self.gh),subplotpars=matplotlib.figure.SubplotParams(hspace=hspace,wspace=wspace))
+		FigureCanvas(self.fig)
 
 	def subaxes(self, idx, *args, **kwargs):
-		return matplotlib.pyplot.subplot2grid((self.gh,self.gw), (idx//self.gw,idx%self.gw), *args, **kwargs)
+		return self.fig.add_subplot(self.gh,self.gw,idx+1)
 
 
 def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weights=None ):
@@ -374,6 +376,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.plot(iters, tmp[0], '-', color='tab:orange', label='median')
 	ax.plot(iters, tmp[1], '-', iters, tmp[2], '-', color='tab:blue', label=r'$1\sigma$')
 	ax.plot(iters, tmp[3], 'k-', iters, tmp[4], 'k-', label=r'$2\sigma$')
+	ax.grid(which='both')
 
 	# Actual chain
 	ax = gridfig.subaxes(baseidx+i)
@@ -410,6 +413,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	for idx in idxs:
 		acorr.append( dfmautocorr.integrated_time(pmean[:idx]) )
 	ax.plot(idxs,acorr)
+	ax.grid(which='both')
 
 	# Brooks-Gelman
 	dis = 1
@@ -423,6 +427,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.set_xlim(iters[dis],iters[-1])
 	ax.legend(loc='best')
 	ax.set_title( title )
+	ax.grid(which='both')
 	# Rhat (uncorrected)
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
@@ -432,6 +437,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.set_xlim(iters[dis],iters[-1])
 	ax.legend(loc='best')
 	ax.set_title( title )
+	ax.grid(which='both')
 
 
 def diagnostics( chain_file, savefile, nburn=0, exclude_lnprob=False, parlist=None ):
@@ -464,6 +470,7 @@ def diagnostics( chain_file, savefile, nburn=0, exclude_lnprob=False, parlist=No
 	ax = gridfig.subaxes(len(parlist)*ndiags)
 	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
 	ax.set_title(r'acceptance fraction')
+	ax.grid(which='both')
 
 	# Saving the figure
 	import tempfile
