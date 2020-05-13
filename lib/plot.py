@@ -99,7 +99,7 @@ def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weig
 				labels[i] = r'log$_{10}$ %s' % labels[i]
 		truths.append( data[-1][imaxlnprob] )
 	data = numpy.vstack( data ).T
-	from .emcee import corner as dfmtriangle
+	from phymcmc import corner as dfmtriangle
 	fig = dfmtriangle.corner(data, labels=labels, truths=truths, weights=weights)
 	# Now add a histogram for lnprob
 	x = pardict['lnprob']

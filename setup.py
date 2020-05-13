@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ setup(
 	package_data = {"": ["LICENSE"]},
 	packages = [
 		'phymcmc',
-		'phymcmc.emcee'
+		'phymcmc.corner',
+		'phymcmc.emcee',
 	],
 	scripts = [
 		'bin/phymcmc_fix_fracaccept',
