@@ -336,7 +336,7 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	derivedchain = False
 	if 'derivedchain' in f:
 		derivedchain = f['derivedchain'][:]
-		derivedparlist = f['derivedchain'].attrs['parlist']
+		chainattrs['parderived'] = f['derivedchain'].attrs['parlist']
 		pardict.update( eval(f['derivedchain'].attrs['pardict']) )
 	f.close()
 	# nburn can be a fraction of the run rather than a number of steps
@@ -357,7 +357,7 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 			pardict[pn] = mcchaincopy[idx,pi]
 		# Add the derived parameters to the dictionary if they exist
 		if derivedchain is not False:
-			for pi,pn in enumerate(derivedparlist):
+			for pi,pn in enumerate(chainattrs['parderived']):
 				pardict[pn] = derivedchain[idx,pi]
 		# Tell people about what you got for them ;)
 		if verbose:
