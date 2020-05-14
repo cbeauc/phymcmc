@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -40,7 +40,7 @@ allpars = ['ssr','V0','b','p','c','R0','tinf','chalf']
 if True:
 	plotpars = allpars[:5]
 	plotlabels = plotpars
-	fig = phymcmc.plot.triangle(plotpars, plotlabels, chainfile)
+	fig = phymcmc.plot.triangle(chainfile, parlist=plotpars, labels=plotlabels)
 	fig.savefig('triangle_%s.png'%fname, bbox_inches='tight')
 
 # Making histogram grid of all params
@@ -48,6 +48,5 @@ if True:
 	colors = ['blue']
 	plotpars = allpars
 	plotlabels = [labeldic[key] for key in plotpars]
-	gridfig = phymcmc.plot.hist_grid(plotpars, [chainfile], colors, dims=(2,4), labels=plotlabels)
+	gridfig = phymcmc.plot.hist_grid([chainfile], parlist=plotpars, labels=plotlabels, colors=colors, dims=(2,4))
 	gridfig.fig.savefig('hists_%s.pdf'%fname, bbox_inches='tight')
-
