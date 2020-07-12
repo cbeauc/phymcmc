@@ -135,7 +135,7 @@ def bayes_diff_pvalue( dist, verbose=False ):
 # - median and confidence interval (CI) - bayes=False
 # and returns a dictionary where the keys are the parameters and the
 # values are tuples with (mode,lower-bound,upper-bound).
-def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=True, nburn=0 ):
+def chains_params( chainfiles, bayes=True, frac=0.95, parlist=None, linpars=None, verbose=True, nburn=0 ):
 
 	# Check if you've got one or more chains
 	if isinstance(chainfiles, str):
@@ -171,7 +171,7 @@ def chains_params( chainfiles, bayes=True, parlist=None, linpars=None, verbose=T
 			if key not in linpars:
 				dis = numpy.log10(dis)
 			# Simple report on individual chain (no comparison)
-			pardic[key] = compute_pctiles(dis,bayes)
+			pardic[key] = compute_pctiles(dis,bayes,frac=frac)
 		pardics.append(pardic.copy())
 
 	# Now return list of dicts
@@ -232,8 +232,7 @@ def chains_compare( chainfiles, pairings=None, bayes=True, parlist=None, linpars
 	return pvaldic
 
 
-def table_params( dic, parlist=None, parlabels=None, linpars=None ):
-
+def table_params( dic, aserror=False, parlist=None, parlabels=None, linpars=None ):
 	analysis_linpars = dic[0]['linpars']
 	if linpars is None:
 		linpars = analysis_linpars
@@ -253,14 +252,27 @@ def table_params( dic, parlist=None, parlabels=None, linpars=None ):
 	for key,label in zip(parlist,parlabels):
 		table += '%s ' % label
 		for strain in range(nstrains):
-			if dic[strain][key] == '---':
-				table += '& --- '
-			elif key in analysis_linpars:
-				table += '& $%.3g\\ [%.2g,%.2g]$ ' % dic[strain][key]
-			elif key in linpars:
-				table += '& $%.3g\\ [%.2g,%.2g]$ ' % tuple([10.0**i for i in dic[strain][key]])
+			if not aserror:
+				if dic[strain][key] == '---':
+					table += '& --- '
+				elif key in analysis_linpars:
+					table += '& $%.3g\\ [%.2g,%.2g]$ ' % dic[strain][key]
+				elif key in linpars:
+					table += '& $%.3g\\ [%.2g,%.2g]$ ' % tuple([10.0**i for i in dic[strain][key]])
+				else:
+					table += '& $10^{%.3g\\ [%.2g,%.2g]}$ ' % dic[strain][key]
 			else:
-				table += '& $10^{%.3g\\ [%.2g,%.2g]}$ ' % dic[strain][key]
+				if dic[strain][key] == '---':
+					table += '& --- '
+				elif key in analysis_linpars:
+					md,lb,ub = dic[strain][key]
+					table += '& $%.3g_{%+.2g}^{%+.2g}$ ' % (md,lb-md,ub-md)
+				elif key in linpars:
+					md,lb,ub = tuple([10.0**i for i in dic[strain][key]])
+					table += '& $%.3g_{%+.2g}^{%+.2g}$ ' % (md,lb-md,ub-md)
+				else:
+					md,lb,ub = dic[strain][key]
+					table += '& $10^{%.3g_{%+.2g}^{%+.2g}$ ' % (md,lb-md,ub-md)
 		table += '\\\\\n' # new line, new param
 	# Make table footer
 	table += '\\end{tabular}\n'
