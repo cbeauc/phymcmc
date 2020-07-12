@@ -32,7 +32,6 @@ import phymcmc.autocorr as dfmautocorr
 import matplotlib
 params = {
 	# Makes things better
-	'backend': 'PDF',
 	'xtick.labelsize': 14.0,
 	'xtick.direction': 'in',
 	'xtick.top': True,
@@ -48,7 +47,7 @@ params = {
 }
 matplotlib.rcParams.update(params)
 import matplotlib.figure
-from matplotlib.backends.backend_pdf import FigureCanvas
+from matplotlib.backends.backend_cairo import FigureCanvas
 
 #
 # =============================================================================
@@ -65,7 +64,7 @@ class grid_plot(object):
 		self.gw = ghgw[1]
 		# Setup the figure looking nice
 		self.fig = matplotlib.figure.Figure(figsize=(rwidth*self.gw,rheight*self.gh),subplotpars=matplotlib.figure.SubplotParams(hspace=hspace,wspace=wspace))
-		FigureCanvas(self.fig)
+		self.canvas = FigureCanvas(self.fig)
 
 	def subaxes(self, idx, *args, **kwargs):
 		return self.fig.add_subplot(self.gh,self.gw,idx+1)
