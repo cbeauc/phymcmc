@@ -47,7 +47,7 @@ params = {
 }
 matplotlib.rcParams.update(params)
 import matplotlib.figure
-from matplotlib.backends.backend_cairo import FigureCanvas
+from matplotlib.backends.backend_agg import FigureCanvas
 
 #
 # =============================================================================
