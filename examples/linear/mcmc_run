@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 # =============================================================================
 
 import linmod
+import multiprocessing
 import numpy
 import phymcmc.mcmc
 
@@ -39,12 +40,15 @@ mcpars = dict(
 	nsteps = 1500,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space
-	linpars = ['lnprob', 'slope', 'yint'],
-	threads = 4 # number of CPU threads to use
+	linpars = ['lnprob', 'slope', 'yint']
 )
-# Setting up the MCMC sampler
-mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
-# Let phymcmc pick the initial position of your walkers
-mcsampler.init_walkers_for_me()
-# Performing the MCMC run
-mcsampler.run_mcmc()
+
+if __name__ == '__main__':
+	with multiprocessing.Pool() as pool:
+		mcpars['pool'] = pool
+		# Setting up the MCMC sampler
+		mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
+		# Let phymcmc pick the initial position of your walkers
+		mcsampler.init_walkers_for_me()
+		# Performing the MCMC run
+		mcsampler.run_mcmc()

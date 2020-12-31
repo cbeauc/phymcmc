@@ -43,7 +43,7 @@ def lnprobfn(pvec,model):
 	return model.get_lnprob(pvec)
 
 
-def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
+def restart_sampler( chain_file, model, pool=None, verbose=True ):
 	# FIXME: should work but never been tested
 	#	args should contain fitting data, for example!
 	# NOTE: will only work if filledlength less than nwalkers*(nstep+1)
@@ -58,8 +58,7 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
 		linpars = eval(mcchain.attrs['linpars']),
-		stepsize = mcchain.attrs['stepsize'],
-		threads = threads,
+		moves = mcchain.attrs['moves'],
 		pool = pool,
 		verbose = verbose
 	)
@@ -75,25 +74,30 @@ def restart_sampler( chain_file, model, threads=1, pool=None, verbose=True ):
 
 
 class MCSampler( object ):
-	def __init__(self, chain_file, model, nwalkers, nsteps, stepsize=2.0, linpars=[], live_dangerously=False, threads=1, pool=None, verbose=True):
+	def __init__(self, chain_file, model, nwalkers, nsteps, linpars=[], moves=None, pool=None, verbose=True):
 		# Required arguments
 		self.chain_file = chain_file
 		self.model = model
 		self.nwalkers = nwalkers
 		self.nsteps = nsteps
 		# Optional arguments
-		self.stepsize = stepsize
 		self.linpars = linpars
-		self.threads = threads
+		self.moves = moves
 		self.pool = pool
 		self.verbose = verbose
+
+		# 'moves' is specificed as string
+		# this it to avoid clients needing to import emcee and
+		# to allow storage of stepping method into hdf5 file.
+		if self.moves is None:
+			self.moves = 'emcee.moves.StretchMove(a=2.0)'
 
 		# Additional parameters/properties of sampler
 		self.npars = len(self.model.params.parfit)
 		self.acceptance_fraction = []
 
 		# Acquire the emcee sampler
-		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, a=self.stepsize, args=[self.model], threads=self.threads, pool=self.pool, live_dangerously=live_dangerously)
+		self.sampler = emcee.EnsembleSampler(self.nwalkers, self.npars, lnprobfn, moves=eval(self.moves), args=[self.model], pool=self.pool)
 
 
 	def create_curlnprob(self, curpos):
@@ -253,8 +257,8 @@ class MCSampler( object ):
 		fchain.attrs['parfit'] = repr(['lnprob']+self.model.params.parfit)
 		fchain.attrs['nwalkers'] = self.nwalkers
 		fchain.attrs['nsteps'] = self.nsteps
-		fchain.attrs['stepsize'] = self.stepsize
 		fchain.attrs['linpars'] = repr(self.linpars)
+		fchain.attrs['moves'] = self.moves
 		# Store the walker's original position into the chain file
 		nl = self.nwalkers
 		f['mcchain'][:nl,0] = self.curlnprob
@@ -272,11 +276,13 @@ class MCSampler( object ):
 			print('Starting the MCMC run...')
 			sys.stdout.flush()
 			trunstart = time.time()
+		# initialize the sampler
+		initial_state = emcee.State(self.curpos, log_prob=self.curlnprob)
 		# Now walk...
 		poss = []
 		lnprobs = []
 		twrite = time.time()
-		for nstp, (nwpos, nwlnprob, _) in enumerate(self.sampler.sample(self.curpos, lnprob0=self.curlnprob, iterations=self.nsteps, storechain=False)):
+		for nstp, ((nwpos, nwlnprob, _),nacc) in enumerate(self.sampler.sample(initial_state, iterations=self.nsteps, store=False)):
 
 			# Store current pos + lnprob of each walker
 			poss.append(nwpos.copy())
@@ -284,7 +290,7 @@ class MCSampler( object ):
 
 			# Average fraction of accepted since start
 			#	averaged over all walkers (ideally in 0.2-0.5 range).
-			self.acceptance_fraction.append( numpy.mean(self.sampler.acceptance_fraction) )
+			self.acceptance_fraction.append( numpy.mean(nacc) )
 
 			# Print to file every once in a while
 			if (len(lnprobs)*self.nwalkers > chunk_size) or nstp==self.nsteps-1:
@@ -329,8 +335,8 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	chainattrs['filledlength'] = mcchain.attrs['filledlength']
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
-	chainattrs['stepsize'] = mcchain.attrs['stepsize']
 	chainattrs['linpars'] = eval(mcchain.attrs['linpars'])
+	chainattrs['moves'] = mcchain.attrs['moves']
 	# If parameters derived/calculated from the chain are in there
 	# get them out as well.
 	derivedchain = False

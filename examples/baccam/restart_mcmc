@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -41,13 +41,15 @@ mcpars = dict(
 	nsteps = 1600,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space
-	linpars = ['lnprob','tI'],
-	threads = multiprocessing.cpu_count()
+	linpars = ['lnprob','tI']
 )
 
-# Setting up the MCMC sampler
-mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
-# Initalize walker position from last step of an existing chain
-mcsampler.init_walkers_from_chain('chain_burn1000.hdf5')
-# Performing the MCMC run
-mcsampler.run_mcmc()
+if __name__ == '__main__':
+	with multiprocessing.Pool() as pool:
+		mcpars['pool'] = pool
+	# Setting up the MCMC sampler
+	mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
+	# Initalize walker position from last step of an existing chain
+	mcsampler.init_walkers_from_chain('chain_burn1000.hdf5')
+	# Performing the MCMC run
+	mcsampler.run_mcmc()

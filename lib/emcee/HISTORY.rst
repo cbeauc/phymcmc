@@ -1,5 +1,34 @@
 .. :changelog:
 
+3.0.2 (2019-11-15)
+++++++++++++++++++
+
+- Added tutorial for moves interface
+- Added information about contributions to documentation
+- Improved documentation for installation and testing
+- Fixed dtype issues and instability in linear dependence test
+- Final release for `JOSS <https://joss.theoj.org/>`_ submission
+
+
+3.0.1 (2019-10-28)
+++++++++++++++++++
+
+- Added support for long double dtypes
+- Prepared manuscript to submit to `JOSS <https://joss.theoj.org/>`_
+- Improved packaging and release infrastructure
+- Fixed bug in initial linear dependence test
+
+
+3.0.0 (2019-09-30)
+++++++++++++++++++
+
+- Added progress bars using `tqdm <https://github.com/tqdm/tqdm>`_.
+- Added HDF5 backend using `h5py <http://www.h5py.org/>`_.
+- Added new ``Move`` interface for more flexible specification of proposals.
+- Improved autocorrelation time estimation algorithm.
+- Switched documentation to using Jupyter notebooks for tutorials.
+- More details can be found `on the docs <https://emcee.readthedocs.io/en/v3.0.0/user/upgrade/>`_.
+
 2.2.0 (2016-07-12)
 ++++++++++++++++++
 

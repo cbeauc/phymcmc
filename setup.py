@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
 	name = 'phymcmc',
-	version = '0.4',
+	version = '0.5',
 	author = 'Catherine Beauchemin',
 	author_email = 'cbeau@users.sourceforge.net',
 	url = 'https://github.com/cbeauc/phymcmc',

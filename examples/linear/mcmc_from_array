@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2016-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2016-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 # =============================================================================
 
 import linmod
+import multiprocessing
 import numpy
 import phymcmc.mcmc
 
@@ -37,17 +38,22 @@ mcpars = dict(
 	nsteps = 1500,
 	# Parameters over which walkers will be linearly distributed initially
 	# Note that all parameters will be walked in LINEAR space
-	linpars = ['lnprob', 'slope', 'yint'],
-	threads = 4
+	linpars = ['lnprob', 'slope', 'yint']
 )
-# Setting up the MCMC sampler
-mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
-# Example on how to initialize walker positions from an array
+
+# Example on how to create an array from which to initialize walker positions
 #   (it is up to you how you build the array)
 import numpy.random
 initslope = numpy.random.randn(mcpars['nwalkers'])*2.5+15.0
 inityint = numpy.random.randn(mcpars['nwalkers'])*2.0+9.0
 initpos = numpy.vstack((initslope,inityint)).T
-mcsampler.init_walkers_from_array(initpos)
-# Performing the MCMC run
-mcsampler.run_mcmc()
+
+if __name__ == '__main__':
+	with multiprocessing.Pool() as pool:
+		mcpars['pool'] = pool
+		# Setting up the MCMC sampler
+		mcsampler = phymcmc.mcmc.MCSampler( **mcpars )
+		# Initialize walkers position from created array, initpos
+		mcsampler.init_walkers_from_array(initpos)
+		# Performing the MCMC run
+		mcsampler.run_mcmc()
