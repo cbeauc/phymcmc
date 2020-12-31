@@ -31,6 +31,8 @@ setup(
 		'phymcmc',
 		'phymcmc.corner',
 		'phymcmc.emcee',
+		'phymcmc.emcee.backends',
+		'phymcmc.emcee.moves',
 	],
 	scripts = [
 		'bin/phymcmc_fix_fracaccept',

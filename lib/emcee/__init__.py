@@ -23,10 +23,7 @@ __description__ = "The Python ensemble sampling toolkit for MCMC"
 __version__ = "3.0.3.dev40+g408f422"
 #######################
 
-#### MODIFIED LINE ####
-# from . import autocorr, backends, moves
-from phymcmc.emcee import autocorr, backends, moves
-#######################
+from . import autocorr, backends, moves
 from .ensemble import EnsembleSampler, walkers_independent
 from .state import State
 
