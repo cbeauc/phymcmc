@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -58,10 +58,13 @@ def restart_sampler( chain_file, model, pool=None, verbose=True ):
 		nwalkers = mcchain.attrs['nwalkers'],
 		nsteps = mcchain.attrs['nsteps'],
 		linpars = eval(mcchain.attrs['linpars']),
-		moves = mcchain.attrs['moves'],
 		pool = pool,
 		verbose = verbose
 	)
+	try:
+		mcpars['moves'] = mcchain.attrs['moves']
+	except KeyError: # old chain version
+		mcpars['moves'] = 'emcee.moves.StretchMove(a=%s)'%mcchain.attrs['stepsize']
 	# Grab initialized sampler
 	sampler = MCSampler( **mcpars )
 	sampler.acceptance_fraction = f['acceptance_fraction'][:]
@@ -314,12 +317,13 @@ class MCSampler( object ):
 				if self.verbose:
 					twrite = time.time()
 					print('   writing to disk took %g s' % (twrite-self.tstart))
-					print('Wrote %g%% of simulation to disk for you.' % (100*(nstp+1)/self.nsteps))
+					print('Wrote %g%% of simulation to %s.' % (100*(nstp+1)/self.nsteps,self.chain_file))
 					sys.stdout.flush()
 				poss = []
 				lnprobs = []
 		if self.verbose:
 			print('The complete MCMC run took %g h. Enjoy!' % ((time.time()-trunstart)/3600.0))
+			print('   Written to %g' % self.chain_file)
 
 
 def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
@@ -336,7 +340,10 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	chainattrs['nwalkers'] = mcchain.attrs['nwalkers']
 	chainattrs['nsteps'] = mcchain.attrs['nsteps']
 	chainattrs['linpars'] = eval(mcchain.attrs['linpars'])
-	chainattrs['moves'] = mcchain.attrs['moves']
+	try:
+		chainattrs['moves'] = mcchain.attrs['moves']
+	except KeyError: # old chain version
+		chainattrs['moves'] = 'emcee.moves.StretchMove(a=%s)'%mcchain.attrs['stepsize']
 	# If parameters derived/calculated from the chain are in there
 	# get them out as well.
 	derivedchain = False
