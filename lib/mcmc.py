@@ -323,7 +323,7 @@ class MCSampler( object ):
 				lnprobs = []
 		if self.verbose:
 			print('The complete MCMC run took %g h. Enjoy!' % ((time.time()-trunstart)/3600.0))
-			print('   Written to %g' % self.chain_file)
+			print('   Written to %s' % self.chain_file)
 
 
 def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
