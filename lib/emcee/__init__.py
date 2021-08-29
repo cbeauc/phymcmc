@@ -20,7 +20,7 @@ __description__ = "The Python ensemble sampling toolkit for MCMC"
 
 #### MODIFIED LINE ####
 # from .emcee_version import __version__  # isort:skip
-__version__ = "3.0.3.dev40+g408f422"
+__version__ = "3.1.2.dev0+g9935a81.d20210829"
 #######################
 
 from . import autocorr, backends, moves
