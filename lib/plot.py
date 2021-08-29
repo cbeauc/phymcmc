@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -439,7 +439,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax.grid(which='both')
 
 
-def diagnostics( chain_file, savefile, nburn=0, exclude_lnprob=False, parlist=None ):
+def diagnostics( chain_file, nburn=0, exclude_lnprob=False, parlist=None ):
 	# Get the chain first
 	pardict, chainattrs = phymcmc.mcmc.load_mcmc_chain(chain_file, nburn=nburn)
 
@@ -471,10 +471,4 @@ def diagnostics( chain_file, savefile, nburn=0, exclude_lnprob=False, parlist=No
 	ax.set_title(r'acceptance fraction')
 	ax.grid(which='both')
 
-	# Saving the figure
-	import tempfile
-	import subprocess
-	_,tmpfname = tempfile.mkstemp(suffix='.png')
-	gridfig.fig.savefig(tmpfname, bbox_inches='tight')
-	subprocess.call('convert %s %s_diag.pdf'% (tmpfname,savefile), shell=True)
-	subprocess.call('rm -f %s'% tmpfname, shell=True)
+	return gridfig

@@ -1,5 +1,5 @@
-#!/usr/bin/python
-# Copyright (C) 2017-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+#!/usr/bin/env python
+# Copyright (C) 2017-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -68,7 +68,8 @@ args, savename, plotsrequested = parse_args()
 print('Will now plot for you:', plotsrequested)
 
 if {'diag','all'} & plotsrequested:
-	phymcmc.plot.diagnostics( args.chainfile, savename, nburn=args.nburn )
+	gridfig = phymcmc.plot.diagnostics( args.chainfile, nburn=args.nburn )
+	gridfig.fig.savefig(savename+'_diag.png', bbox_inches='tight')
 
 if {'hist','all'} & plotsrequested:
 	gridfig = phymcmc.plot.hist_grid( [args.chainfile], nburn=args.nburn )
