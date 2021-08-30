@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2019 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@ import math
 import numpy
 import scipy.optimize
 import sys
-PosInf = float('+inf')
 
 #
 # =============================================================================
@@ -37,65 +36,52 @@ PosInf = float('+inf')
 #
 
 
-def rcost(pvec, model, maxssr):
-	return numpy.ones(pvec.shape)*scost(pvec, model, maxssr)
-
-def scost(pvec, model, maxssr):
-	pvec = 10.0**pvec
+def scost(lnpvec, model):
+	if numpy.max(lnpvec) > 700.0:
+		return float('inf')
 	try:
-		nssr = model.get_normalized_ssr(pvec)
-		# nssr must be listed first in min for nan to be propagated
-		nssr = min(nssr, maxssr)
+		neglnprob = -model.get_lnprob(numpy.exp(lnpvec))
 	except (ArithmeticError,ValueError) as e:
-		print('** WARNING! Your code believes the parameters are valid but the call to get_normalized_ssr failed. Don\'t ignore this. Figure out why and fix this problem.', file=sys.stderr)
+		print('** WARNING! Your code believes the parameters are valid but the call to ln_probability failed. Don\'t ignore this. Figure out why and fix this problem.', file=sys.stderr)
 		print('pdic = '+repr(model.params.pardict), file=sys.stderr)
 		print(e, file=sys.stderr)
-		return maxssr
-	if math.isnan( nssr ):
-		print('** WARNING! get_normalized_ssr encountered NaN SSR (and returned maxssr) for:\npdic = %s'%repr(model.params.pardict), file=sys.stderr)
-		return maxssr
-	return nssr
+		return float('inf')
+	return neglnprob
 
 
-def perform_fit(model, verbose=True, maxssr=PosInf, rep_fit=3):
+def perform_fit(model, verbose=True, nreps=3):
 	if verbose:
-		print(repr(model.params.parfit))
-		print(repr(model.params.vector))
+		print('#'+repr(model.params.parfit))
+		print('#'+repr(model.params.vector))
 
 	# It's best to fit parameters in log space
-	pvec = numpy.log10(model.params.vector)
+	lnpvec = numpy.log(model.params.vector)
 	if verbose:
-		ssr = scost(pvec, model, maxssr)
-		print( 'Starting ssr = %g\n' % ssr )
+		lnprob = -scost(lnpvec, model)
+		print( '# Starting lnprob = %g (to be maximized)\n' % lnprob )
 
-	# Do rep_fit fits w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
-	for rep in range(rep_fit):
-		lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,maxssr), maxfev=7200, full_output=True)[0:3]
-		pvec = lsout[0]
-		model.params.vector = 10.0**pvec
-		ssr = lsout[2]['fvec'][0]
-		if verbose:
-			print( '# Levenberg-Marquardt, rep %d (ssr = %g)' % (rep,ssr) )
-			print( repr(model.params.pardict) )
+	# Do nreps fits with rotating methods
+	for rep in range(nreps):
+		for meth in ['CG','TNC','COBYLA']:
+			try:
+				lsout = scipy.optimize.minimize(scost, lnpvec, args=(model), method=meth)
+			except:
+				continue
+			if lsout.fun == float('inf'):
+				continue
+			lnprob = -lsout.fun
+			lnpvec = lsout.x
+			model.params.vector = numpy.exp(lnpvec)
+			if verbose:
+				print('# Rep=%d/%d using %s. success? %s (lnprob = %g)'%(rep+1,nreps,meth,lsout.success,lnprob))
+				print( 'pdic = %s' % repr(model.params.pardict) )
 
-	# One long but more accurate fit using the Nelder-Mead downhill simplex
-	[pvec,ssr] = scipy.optimize.fmin(scost, pvec, args=(model,maxssr), full_output=True, disp=False)[0:2]
-	model.params.vector = 10.0**pvec
 	if verbose:
-		print( '# Nelder-Mead (ssr = %g)' % ssr )
-		print( repr(model.params.pardict) )
+		print( '\n# Final values (lnprob = %g)' % lnprob )
+		print( 'pdic = %s\n' % repr(model.params.pardict) )
 
-	# One last fit w leastsq, a wrapper of MINPACK's Levenberg-Marquardt
-	lsout = scipy.optimize.leastsq(rcost, pvec, args=(model,maxssr), maxfev=7200, full_output=True)
-	pvec = lsout[0]
-	model.params.vector = 10.0**pvec
-	ssr = lsout[2]['fvec'][0]
-	if verbose:
-		print( '# Levenberg-Marquardt (final fit, ssr = %g)' % ssr )
-		print( repr(model.params.pardict) )
-
-	# Returns (best-fit parameters, SSR)
-	return (model.params, ssr)
+	# Returns (best-fit parameters, lnprob)
+	return (model.params, lnprob)
 
 
 def linregress(x, y=None):

@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2020 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ from setuptools import setup
 
 setup(
 	name = 'phymcmc',
-	version = '0.5',
+	version = '0.6',
 	author = 'Catherine Beauchemin',
 	author_email = 'cbeau@users.sourceforge.net',
 	url = 'https://github.com/cbeauc/phymcmc',

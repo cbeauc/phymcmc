@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright (C) 2014-2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -19,15 +19,19 @@
 import baccam
 import numpy
 import phymcmc.fits
+import phymcmc.plot
 
 dat = numpy.loadtxt("baccam.dat")
 dathpi = dat[:,0]
 datV = dat[:,1]
-# This should be the standard deviation of the residuals
-#   between your model and data for your best-fit (not yet known)
+# This is possibly be the standard deviation of the data replicates
+#   (where applicable) or the 68% error bars (if you have those).
+#   If you have neither, you can use the mean of the residuals between
+#   your model's best fit (once found... iterate!) and the data
 #   which is why it's ok as 1.0 for fitting but should be set to
 #   the correct value when running MCMC because the normalized SSR
 #   is required to calculate the likelihood = exp[-ssr/(2*stdev^2)]
+#   where stdev here is called "sigV".
 sigV = 1.0
 # Your data
 # (feel free to pack other non-varying arguments in there)
@@ -51,10 +55,21 @@ params = baccam.params(pdic.copy(),pfit)
 model = baccam.model(dat, params)
 
 # Fit model to data
-params,bfssr = phymcmc.fits.perform_fit(model,verbose=True)
+params,lnprob = phymcmc.fits.perform_fit(model,verbose=True)
 
 # Solve and save results
-t = numpy.linspace(0.0,dathpi[-1])
+t = numpy.linspace(0.0,7.5*24.0)
 res = model.get_solution(t)
 mV = numpy.hstack((numpy.matrix(t).T,res))
 numpy.savetxt('soln_V.dat', mV)
+# Plot it too?
+if True:
+	gridfig = phymcmc.plot.grid_plot((1,1),rwidth=4.0)
+	ax = gridfig.subaxes(0)
+	ax.semilogy(dathpi/24.0,datV,'s')
+	ax.semilogy(t/24.0,res[:,0],'k-')
+	ax.set_ylabel(r'Viral titer (TCID$_{50}$/mL)')
+	ax.set_ylim(10.0**-2.2,10.0**8.1)
+	ax.set_xlabel('time post-infection (days)')
+	ax.set_xlim(0.0,7.5)
+	gridfig.fig.savefig('soln_V.pdf', bbox_inches='tight')
