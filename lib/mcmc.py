@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2022 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -383,8 +383,8 @@ def load_mcmc_chain( chain_file, nburn=0, asdict=True, verbose=True ):
 	return mcchaincopy[idx,:], chainattrs 
 
 
-def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
-	opdic,pattrs = load_mcmc_chain( chain_file, nburn=nburn )
+def load_mcmc_bestfit( chain_file, verbose=True, nburn=0 ):
+	opdic,pattrs = load_mcmc_chain( chain_file, nburn=nburn, verbose=verbose )
 	pfit = pattrs['parfit']
 	idx = opdic['lnprob'].argmax()
 	pdic = {}
@@ -401,9 +401,9 @@ def load_mcmc_bestfit( chain_file, verbose=False, nburn=0 ):
 	return (pdic,pfit)
 
 
-def add_derived_dict_to_mcmc_chain( derivedparfn, chain_file ):
+def add_derived_dict_to_mcmc_chain( derivedparfn, chain_file, verbose=True ):
 	# load the current chain
-	pdic, chainattrs = load_mcmc_chain( chain_file, nburn=0 )
+	pdic, chainattrs = load_mcmc_chain( chain_file, nburn=0, verbose=verbose )
 	# compute and obtain the derived dictionary
 	deriveddic = derivedparfn( pdic )
 	# put the resulting dictionary in mcmc-hdf5 friendly format

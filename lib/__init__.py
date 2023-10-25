@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2022 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ class ParamStruct(object):
 	def __init__(self,pardict,parfit):
 		self.pardict = pardict
 		self.parfit = parfit
+		self.validate()
 	def validate(self):
 		pass
 	@property
