@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2021 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2024 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -75,7 +75,8 @@ def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weig
 	if parlist is None:
 		parlist = chainattrs['parfit']
 	if labels is None:
-		labels = list(parlist)
+		# Use parlist as is but fix underscores
+		labels = [l.replace('_',r'\_') for l in parlist]
 	else:
 		labels = labels[:]
 	if linpars is None:
@@ -90,14 +91,9 @@ def triangle( chain_file, parlist=None, labels=None, nburn=0, linpars=None, weig
 	for i,p in enumerate(parlist):
 		if p in linpars:
 			data.append( pardict[p] )
-			if '_' in labels[i]:
-				labels[i] = r'\verb|%s|' % labels[i]
 		else:
 			data.append( numpy.log10( pardict[p] ) )
-			if '_' in labels[i]:
-				labels[i] = r'log$_{10}$ \verb|%s|' % labels[i]
-			else:
-				labels[i] = r'log$_{10}$ %s' % labels[i]
+			labels[i] = r'log$_{10}$ %s' % labels[i]
 		truths.append( data[-1][imaxlnprob] )
 	data = numpy.vstack( data ).T
 	from phymcmc import corner as dfmtriangle
