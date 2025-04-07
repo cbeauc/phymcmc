@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2022 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2025 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ from phymcmc import emcee
 import h5py
 import math
 import numpy
+import numpy as np # argh.. need to fix structures in hdf5 file
 import random
 import sys
 import time

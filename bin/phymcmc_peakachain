@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# Copyright (C) 2017 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2017-2025 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@ def parse_args():
 		help='prints a dictionary of the best fit')
 	parser.add_argument('-o','--output', default=sys.stdout,
 		help='filename to save the results (default=stdout)')
+	parser.add_argument('-a','--autocorr', action='store_true',
+		help='returns emcee.autocorr.integrated_time')
 
 	# Parsing arguments
 	args = parser.parse_args()
@@ -77,5 +79,18 @@ if len(parsrequested):
 	res = numpy.vstack([res[par] for par in parsrequested]).T
 	numpy.savetxt(args.output, res, header=msg)
 
+if args.autocorr:
+	import emcee
+	pvecs,attrs = phymcmc.mcmc.load_mcmc_chain( args.chainfile, asdict=False )
+	npars = len(attrs['parfit'])
+	pvecs = pvecs[:,1:npars].reshape(-1,attrs['nwalkers'],npars-1)
+	# quiet=True will issue a warning
+	pvecs = emcee.autocorr.integrated_time(pvecs, quiet=True)
+	print( 'Autocorrelation time for:\n', attrs['parfit'][1:npars] )
+	print( repr(['%.3g'%x for x in pvecs]) )
+	pvecs = pvecs.mean()
+	print( 'mean autocorr. time: %.3g steps (recommend nburn=%d, thin=%d)' % (pvecs,round(pvecs*2.5),round(pvecs/2.)) )
+
 if args.best:
 	phymcmc.mcmc.load_mcmc_bestfit( args.chainfile, nburn=args.nburn, verbose=True )
+

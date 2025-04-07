@@ -1,4 +1,4 @@
-# Copyright (C) 2014-2024 Catherine Beauchemin <cbeau@users.sourceforge.net>
+# Copyright (C) 2014-2025 Catherine Beauchemin <cbeau@users.sourceforge.net>
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -121,7 +121,7 @@ def square( chainfile, parlist=None, labels=None, color='b', nbins=20, reset=Tru
 	else:
 		assert gridfig is not None, "If reset is False, you must provide a gridfig."
 	if labels is None:
-		labels = [key.replace('_','\_') for key in parlist]
+		labels = [key.replace('_',r'\_') for key in parlist]
 	if linpars is None:
 		linpars = chainattrs['linpars']
 	# Deciding index binning
@@ -237,25 +237,30 @@ def lalhist( ax, x, bins, linear=False, scaling=None, weights=None, color='blue'
 	return pdf.array.max()
 
 
-def hist_grid( chainfiles, parlist=None, labels=None, colors=None, dims=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, scaling='normalized', hist=hist ):
+def hist_grid( chainfiles, parlist=None, labels=None, colors=None, gridax=None, dims=None, bins=50, relative=[], nburn=0, linpars=None, weights=None, scaling='normalized', hist=hist ):
 
 	# Load first chainfile to have a peak at content
 	pdic,chainattrs = phymcmc.mcmc.load_mcmc_chain( chainfiles[0], nburn=nburn )
 	# Decide on parlist if not given
 	if parlist is None:
 		parlist = chainattrs['parfit']
+
 	# Set the arrangement/dimensions of the hist grid
-	if dims is None:
-		gh = int(math.floor(math.sqrt(len(parlist)/1.618)))
-		gw = int(math.ceil(1.0*len(parlist)/gh))
+	if gridax is None:
+		if dims is None:
+			gh = int(math.floor(math.sqrt(len(parlist)/1.618)))
+			gw = int(math.ceil(1.0*len(parlist)/gh))
+		else:
+			(gh,gw) = dims
+			assert len(parlist) <= (gw*gh), "Grid dimensions %s cannot fit parlist (%d)" % (repr(dims),len(parlist))
+		# Setup the figure looking nice
+		gridfig = grid_plot((gh,gw))
 	else:
-		(gh,gw) = dims
-		assert len(parlist) <= (gw*gh), "Grid dimensions %s cannot fit parlist (%d)" % (repr(dims),len(parlist))
-	# Setup the figure looking nice
-	gridfig = grid_plot((gh,gw))
+		gridfig,ax = gridax
+
 	# Set labels
 	if labels is None:
-		labels = [key.replace('_','\_') for key in parlist]
+		labels = [key.replace('_',r'\_') for key in parlist]
 	# Set colour iteration
 	if colors is None:
 		colors = ['blue','red','green','black','gold'][:len(parlist)]
@@ -365,7 +370,7 @@ def complete_diagnostics_chart( gridfig, baseidx, key, pararray, lin=False ):
 	ax = gridfig.subaxes(baseidx+i)
 	i += 1
 	ax.set_title(r'Median, 1$\sigma$, $2\sigma$')
-	ax.set_ylabel(key.replace('_','\_'))
+	ax.set_ylabel(key.replace('_',r'\_'))
 	ax.set_yscale( yscale )
 	tmp = numpy.percentile(pararray,[50.0,15.87,84.13,2.275,97.72],axis=1)
 	ax.plot(iters, tmp[0], '-', color='tab:orange', label='median')
@@ -455,7 +460,7 @@ def diagnostics( chain_file, nburn=0, exclude_lnprob=False, parlist=None ):
 	gridfig = grid_plot((len(parlist)+1,ndiags))
 
 	# Construct the (nsteps,nwalkers) array for each parameter
-	# and run the requested conversion test method.
+	# and run the requested convergence test method.
 	for idx,key in enumerate(parlist):
 		pararray = pardict[key].reshape((-1,chainattrs['nwalkers']))
 		complete_diagnostics_chart( gridfig, idx*ndiags, key, pararray, lin=(key in chainattrs['linpars']) )
@@ -463,7 +468,7 @@ def diagnostics( chain_file, nburn=0, exclude_lnprob=False, parlist=None ):
 	# Add more overall (not per-parameter) diagnostics (?)
 	# Acceptance fraction
 	ax = gridfig.subaxes(len(parlist)*ndiags)
-	ax.plot(range(len(pararray)-1),chainattrs['acceptance_fraction'])
+	ax.plot(chainattrs['acceptance_fraction'])
 	ax.set_title(r'acceptance fraction')
 	ax.grid(which='both')
 
